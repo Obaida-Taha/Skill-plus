@@ -44,10 +44,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await login(email, password);
   };
 
-  const logout = async () => {
+const logout = async () => {
+  try {
     await account.deleteSession('current');
+  } catch (error) {
+    console.log('Appwrite session delete error:', error);
+  } finally {
+    // ALWAYS reset local user state so the UI responds
     setUser(null);
-  };
+  }
+};
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
