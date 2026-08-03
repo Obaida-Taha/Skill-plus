@@ -7,9 +7,10 @@ import {
   StyleSheet,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ID } from 'react-native-appwrite';
+import { ID, Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
 
 // Types
@@ -53,19 +54,38 @@ export default function DiscoverScreen() {
       const dbId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID || 'skills-collection';
       const colId = process.env.EXPO_PUBLIC_APPWRITE_DISCOVER_COLLECTION_ID || 'discover_skills';
 
-      const response = await databases.listDocuments(dbId, colId);
+      // Paginate to fetch ALL documents beyond default Appwrite limit of 25
+      let allDocuments: any[] = [];
+      let offset = 0;
+      const limit = 100; // Appwrite max per-request limit
+
+      while (true) {
+        const response = await databases.listDocuments(dbId, colId, [
+          Query.limit(limit),
+          Query.offset(offset),
+        ]);
+
+        allDocuments.push(...response.documents);
+
+        // Stop pagination when returned documents are less than requested limit
+        if (response.documents.length < limit) {
+          break;
+        }
+
+        offset += limit;
+      }
 
       // Group flat Appwrite documents into nested Category -> SubCategory structure
       const grouped: { [catName: string]: CategoryGroup } = {};
 
-      response.documents.forEach((doc: any) => {
+      allDocuments.forEach((doc: any) => {
         const catName = doc.category || 'General';
         const subCatName = doc.subCategory || 'Misc';
 
         if (!grouped[catName]) {
           grouped[catName] = {
             name: catName,
-            icon: doc.icon || '🎯',
+            icon: doc.icon || "",
             subCategories: {},
           };
         }
@@ -97,7 +117,7 @@ export default function DiscoverScreen() {
     try {
       // Get current logged in user
       const currentUser = await account.get();
-      
+
       const dbId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID || 'skills-collection';
       const userSkillsColId = 'user_skills';
 
@@ -116,9 +136,10 @@ export default function DiscoverScreen() {
       router.push('/(tabs)/skills' as any);
     } catch (error: any) {
       console.error('Error adding skill:', error.message);
-      alert('Failed to add skill: ' + error.message);
+      Alert.alert('Error', 'Failed to add skill: ' + error.message);
     }
   };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
