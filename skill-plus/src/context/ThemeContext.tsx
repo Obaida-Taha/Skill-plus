@@ -3,28 +3,35 @@ import { useColorScheme } from 'react-native';
 
 export const palette = {
   dark: {
-    background: '#121214',
-    card: '#18181b',
-    border: '#27272a',
-    text: '#ffffff',
-    subtext: '#a1a1aa',
-    accent: '#a78bfa',
-    inputBg: '#27272a',
-    chipBorder: '#3f3f46',
-    modalOverlay: 'rgba(0, 0, 0, 0.75)',
-    emptyText: '#71717a',
+    background: '#121212',                // Matte Black main background
+    card: 'rgba(22, 22, 22, 0.90)',        // Glassy matte dark card
+    border: 'rgba(255, 111, 0, 0.25)',      // Subtle orange glow border
+    text: '#ffffff',                       // Primary white text
+    subtext: '#a0a0a0',                    // Secondary subtle text
+    accent: '#FF6F00',                     // Vibrant Matte Orange
+    accentDark: '#E65100',                 // Deep Burnt Orange
+    inputBg: '#121212',                    // Dark input field background
+    chipBorder: 'rgba(255, 111, 0, 0.30)', // Orange chip border
+    modalOverlay: 'rgba(0, 0, 0, 0.85)',   // Deep dark overlay
+    emptyText: '#666666',                  // Muted placeholder text
+    progressTrack: '#242424',             // Background track for progress bars
+    xpBadgeBg: 'rgba(255, 111, 0, 0.15)',  // Subtle orange tint badge background
   },
   light: {
-    background: '#f4f4f5',
-    card: '#ffffff',
-    border: '#e4e4e7',
-    text: '#18181b',
-    subtext: '#71717a',
-    accent: '#7c3aed',
-    inputBg: '#e4e4e7',
-    chipBorder: '#d4d4d8',
+    // Light mode adjusted to complement the orange theme
+    background: '#F9F9F9',
+    card: '#FFFFFF',
+    border: '#E0E0E0',
+    text: '#1A1A1A',
+    subtext: '#666666',
+    accent: '#E65100',
+    accentDark: '#BF360C',
+    inputBg: '#F0F0F0',
+    chipBorder: '#CCCCCC',
     modalOverlay: 'rgba(0, 0, 0, 0.4)',
-    emptyText: '#a1a1aa',
+    emptyText: '#999999',
+    progressTrack: '#E0E0E0',
+    xpBadgeBg: 'rgba(230, 81, 0, 0.10)',
   },
 };
 
