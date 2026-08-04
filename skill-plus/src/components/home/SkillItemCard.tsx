@@ -49,36 +49,36 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 10,         // Reduced from 16
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 8,     // Reduced from 12 (Saves 12px total across 3 skills)
     borderWidth: 1,
   },
   colorIndicator: {
-    width: 8,
-    height: 38,
-    borderRadius: 4,
-    marginRight: 14,
+    width: 6,            // Tightened from 8
+    height: 32,          // Reduced from 38
+    borderRadius: 3,
+    marginRight: 10,     // Reduced from 14
   },
   skillInfo: {
     flex: 1,
   },
   title: {
-    fontSize: 16,
+    fontSize: 14,        // Tightened from 16
     fontWeight: '600',
   },
   category: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 11,        // Tightened from 12
+    marginTop: 1,
   },
   xpBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 8, // Reduced from 10
+    paddingVertical: 4,   // Reduced from 6
+    borderRadius: 6,
   },
   xpBadgeText: {
     color: '#4caf50',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 11,
   },
 });

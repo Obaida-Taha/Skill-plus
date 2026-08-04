@@ -34,7 +34,7 @@ const getLevelFromXP = (totalXp: number): number => Math.floor(Math.sqrt(totalXp
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth(); // <-- Pulled userProfile from useAuth
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,9 @@ export default function ProfileScreen() {
 
   const [totalXP, setTotalXP] = useState(0);
   const [userSkillsCount, setUserSkillsCount] = useState(0);
-  const streakDays = 7;
+
+  // Dynamic streak reading from Appwrite user_profiles collection
+  const streakDays = userProfile?.streakCount ?? 0;
 
   const dbId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID || 'skills-collection';
 
@@ -108,6 +110,8 @@ export default function ProfileScreen() {
       </ScreenWrapper>
     );
   }
+
+ 
 
   return (
     <ScreenWrapper style={{ backgroundColor: theme.background }}>

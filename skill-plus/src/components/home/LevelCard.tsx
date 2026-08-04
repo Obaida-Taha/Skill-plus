@@ -52,19 +52,19 @@ export function LevelCard({
 
 const styles = StyleSheet.create({
   levelCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 28,
+    borderRadius: 14,
+    padding: 14,         // Reduced from 20
+    marginBottom: 12,    // Reduced from 28 (Saves 16px of vertical space!)
     borderWidth: 1,
   },
   levelHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 10,    // Reduced from 16
   },
   levelTitle: {
-    fontSize: 24,
+    fontSize: 20,        // Tightened from 24
     fontWeight: 'bold',
   },
   levelSubtitle: {
@@ -73,23 +73,23 @@ const styles = StyleSheet.create({
   },
   xpText: {
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 14,        // Tightened from 16
   },
   progressBarBackground: {
-    height: 12,
-    borderRadius: 6,
+    height: 8,           // Tightened from 12
+    borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 6,     // Reduced from 8
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 4,
   },
   progressFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   progressSubtext: {
-    fontSize: 12,
+    fontSize: 11,        // Tightened from 12
   },
 });

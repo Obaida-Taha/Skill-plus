@@ -189,25 +189,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 10,
+    marginBottom: 12, // Reduced from 24
+    marginTop: 4,     // Reduced from 10
   },
-  greeting: { fontSize: 14 },
-  userName: { fontSize: 24, fontWeight: 'bold' },
-  badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  greeting: { fontSize: 13 }, // Reduced from 14
+  userName: { fontSize: 22, fontWeight: 'bold' }, // Reduced from 24
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   badgeText: { color: '#ffb86c', fontWeight: 'bold' },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10, // Reduced from 16
+    marginTop: 8,     // Added tight top spacing
   },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold' },
+  sectionTitle: { fontSize: 17, fontWeight: 'bold' },
   seeAllText: { fontWeight: '600' },
-  emptyCard: { padding: 20, borderRadius: 12, alignItems: 'center', marginBottom: 16, borderWidth: 1 },
-  emptyText: { marginBottom: 12 },
+  emptyCard: { padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12, borderWidth: 1 },
+  emptyText: { marginBottom: 10 },
   discoverBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   discoverBtnText: { fontWeight: 'bold' },
-  quickActionButton: { padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 12 },
-  quickActionText: { fontSize: 16, fontWeight: 'bold' },
+  quickActionButton: { padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 }, // Padding reduced to 14, margin to 8
+  quickActionText: { fontSize: 15, fontWeight: 'bold' },
 });

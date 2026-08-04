@@ -47,7 +47,7 @@ export function ScreenWrapper({
       contentContainerStyle={[
         styles.scrollContent,
         contentContainerStyle,
-        { paddingBottom: dynamicPaddingBottom },
+        { paddingBottom: dynamicPaddingBottom + 40 },
       ]}
       showsVerticalScrollIndicator={false}
     >
@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal: 16, 
+    paddingTop: 8,
   },
 });
