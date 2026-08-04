@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, ScrollView, View } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export type DifficultyType = 'All' | 'Beginner' | 'Intermediate' | 'Advanced';
 

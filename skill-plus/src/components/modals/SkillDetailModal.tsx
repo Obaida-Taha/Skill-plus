@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { SkillItem } from './DiscoverSkillCard';
+import { useTheme } from '../../context/ThemeContext';
+import { SkillItem } from '../discover/DiscoverSkillCard';
 
 interface SkillDetailModalProps {
   selectedSkill: SkillItem | null;
