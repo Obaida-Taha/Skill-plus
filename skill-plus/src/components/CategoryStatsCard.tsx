@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { UserSkill } from './SkillItemCard';
+import { UserSkill } from '../components/home/SkillItemCard';
 
 interface CategoryStatsCardProps {
   skills: UserSkill[];
