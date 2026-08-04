@@ -41,10 +41,10 @@ export function CategoryCard({ title, icon, badgeCount, onPress }: CategoryCardP
 const styles = StyleSheet.create({
   pillCard: {
     width: 160,
-    minHeight: 61, // Changed from fixed height to minHeight so it expands if text is very long
-    borderRadius: 24, // Adjusted border radius slightly for a balanced capsule shape
+    minHeight: 61, 
+    borderRadius: 24, 
     borderWidth: 1,
-    flexDirection: 'column', // Stacks content top-to-bottom
+    flexDirection: 'column', 
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
