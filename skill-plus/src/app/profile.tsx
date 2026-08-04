@@ -15,6 +15,7 @@ import { Query } from 'react-native-appwrite';
 import { account, databases } from '../lib/appwrite';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenWrapper } from '../components/bottomNavTab/ScreenWrapper';
 import { ProfileHeroCard } from '../components/profile/ProfileHeroCard';
@@ -31,6 +32,7 @@ const calculateSkillXP = (skill: any): number => {
 const getLevelFromXP = (totalXp: number): number => Math.floor(Math.sqrt(totalXp / 250)) + 1;
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
