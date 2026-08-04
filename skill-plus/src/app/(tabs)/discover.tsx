@@ -1,28 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Modal,
   ActivityIndicator,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ID, Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
-
-// Types
-type SkillItem = {
-  $id: string;
-  name: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  estimatedHours: string;
-  description: string;
-  subCategory: string;
-  category: string;
-};
+import { useTheme } from '../../context/ThemeContext';
+import {
+  SearchFilterHeader,
+  DifficultyType,
+} from '../../components/SearchFilterHeader';
+import { CategoryCard } from '../../components/CategoryCard';
+import { DiscoverSkillCard, SkillItem } from '../../components/DiscoverSkillCard';
+import { SkillDetailModal } from '../../components/SkillDetailModal';
 
 type CategoryGroup = {
   name: string;
@@ -32,9 +29,11 @@ type CategoryGroup = {
 
 export default function DiscoverScreen() {
   const router = useRouter();
+  const { theme, isDark } = useTheme();
 
   // Loading & Database State
   const [loading, setLoading] = useState(true);
+  const [allSkills, setAllSkills] = useState<SkillItem[]>([]);
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
 
   // Navigation State
@@ -42,7 +41,10 @@ export default function DiscoverScreen() {
   const [selectedSubCategoryName, setSelectedSubCategoryName] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<SkillItem | null>(null);
 
-  // Fetch from Appwrite
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyType>('All');
+
   useEffect(() => {
     fetchDiscoverSkills();
   }, []);
@@ -54,10 +56,9 @@ export default function DiscoverScreen() {
       const dbId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID || 'skills-collection';
       const colId = process.env.EXPO_PUBLIC_APPWRITE_DISCOVER_COLLECTION_ID || 'discover_skills';
 
-      // Paginate to fetch ALL documents beyond default Appwrite limit of 25
-      let allDocuments: any[] = [];
+      let fetchedDocs: any[] = [];
       let offset = 0;
-      const limit = 100; // Appwrite max per-request limit
+      const limit = 100;
 
       while (true) {
         const response = await databases.listDocuments(dbId, colId, [
@@ -65,27 +66,34 @@ export default function DiscoverScreen() {
           Query.offset(offset),
         ]);
 
-        allDocuments.push(...response.documents);
+        fetchedDocs.push(...response.documents);
 
-        // Stop pagination when returned documents are less than requested limit
-        if (response.documents.length < limit) {
-          break;
-        }
-
+        if (response.documents.length < limit) break;
         offset += limit;
       }
 
-      // Group flat Appwrite documents into nested Category -> SubCategory structure
+      const parsedSkills: SkillItem[] = fetchedDocs.map((doc: any) => ({
+        $id: doc.$id,
+        name: doc.name || 'Untitled Skill',
+        difficulty: doc.difficulty || 'Beginner',
+        estimatedHours: doc.estimatedHours || '1h',
+        description: doc.description || '',
+        subCategory: doc.subCategory || 'Misc',
+        category: doc.category || 'General',
+      }));
+
+      setAllSkills(parsedSkills);
+
       const grouped: { [catName: string]: CategoryGroup } = {};
 
-      allDocuments.forEach((doc: any) => {
+      fetchedDocs.forEach((doc: any) => {
         const catName = doc.category || 'General';
         const subCatName = doc.subCategory || 'Misc';
 
         if (!grouped[catName]) {
           grouped[catName] = {
             name: catName,
-            icon: doc.icon || "",
+            icon: doc.icon || '',
             subCategories: {},
           };
         }
@@ -113,15 +121,31 @@ export default function DiscoverScreen() {
     }
   };
 
+  const filteredSkills = useMemo(() => {
+    return allSkills.filter((skill) => {
+      const matchesSearch =
+        searchQuery.trim() === '' ||
+        skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        skill.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        skill.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        skill.subCategory.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesDifficulty =
+        selectedDifficulty === 'All' || skill.difficulty === selectedDifficulty;
+
+      return matchesSearch && matchesDifficulty;
+    });
+  }, [allSkills, searchQuery, selectedDifficulty]);
+
+  const isSearching = searchQuery.trim().length > 0;
+
   const handleLearnSkill = async (skill: SkillItem) => {
     try {
-      // Get current logged in user
       const currentUser = await account.get();
 
       const dbId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID || 'skills-collection';
       const userSkillsColId = 'user_skills';
 
-      // Create user skill document
       await databases.createDocument(dbId, userSkillsColId, ID.unique(), {
         userId: currentUser.$id,
         skillId: skill.$id,
@@ -142,18 +166,28 @@ export default function DiscoverScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#a78bfa" />
-        <Text style={{ color: '#aaa', marginTop: 12 }}>Loading skills database...</Text>
+      <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
+        <Text style={{ color: theme.subtext, marginTop: 12 }}>Loading skills database...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Top Breadcrumb Navigation */}
-      {(selectedCategory || selectedSubCategoryName) && (
-        <View style={styles.breadcrumbBar}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+
+      {/* Filter & Search Header Component */}
+      <SearchFilterHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedDifficulty={selectedDifficulty}
+        onSelectDifficulty={setSelectedDifficulty}
+      />
+
+      {/* Breadcrumb Bar */}
+      {!isSearching && (selectedCategory || selectedSubCategoryName) && (
+        <View style={[styles.breadcrumbBar, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
           <TouchableOpacity
             onPress={() => {
               if (selectedSubCategoryName) {
@@ -163,189 +197,138 @@ export default function DiscoverScreen() {
               }
             }}
           >
-            <Text style={styles.backButtonText}>‹ Back</Text>
+            <Text style={[styles.backButtonText, { color: theme.accent }]}>‹ Back</Text>
           </TouchableOpacity>
-          <Text style={styles.breadcrumbTitle}>
+          <Text style={[styles.breadcrumbTitle, { color: theme.text }]}>
             {selectedSubCategoryName || selectedCategory?.name}
           </Text>
         </View>
       )}
 
-      {/* VIEW 1: Categories */}
-      {!selectedCategory && (
+      {/* VIEW A: Search Results */}
+      {isSearching ? (
         <ScrollView style={styles.listContainer}>
-          <Text style={styles.headerTitle}>Explore Categories</Text>
-          {categories.length === 0 ? (
-            <Text style={styles.emptyText}>No skills found in database yet.</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            Search Results ({filteredSkills.length})
+          </Text>
+          {filteredSkills.length === 0 ? (
+            <Text style={[styles.emptyText, { color: theme.subtext }]}>
+              No skills match your query.
+            </Text>
           ) : (
-            categories.map((category) => (
-              <TouchableOpacity
-                key={category.name}
-                style={styles.card}
-                onPress={() => setSelectedCategory(category)}
-              >
-                <Text style={styles.cardIcon}>{category.icon}</Text>
-                <Text style={styles.cardTitle}>{category.name}</Text>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
+            filteredSkills.map((skill) => (
+              <DiscoverSkillCard
+                key={skill.$id}
+                skill={skill}
+                showCategoryMeta
+                onPress={() => setSelectedSkill(skill)}
+              />
             ))
           )}
         </ScrollView>
-      )}
-
-      {/* VIEW 2: Subcategories */}
-      {selectedCategory && !selectedSubCategoryName && (
-        <ScrollView style={styles.listContainer}>
-          <Text style={styles.headerTitle}>{selectedCategory.name}</Text>
-          {Object.keys(selectedCategory.subCategories).map((subName) => (
-            <TouchableOpacity
-              key={subName}
-              style={styles.card}
-              onPress={() => setSelectedSubCategoryName(subName)}
-            >
-              <Text style={styles.cardTitle}>{subName}</Text>
-              <Text style={styles.badge}>
-                {selectedCategory.subCategories[subName].length} Skills
-              </Text>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
-      {/* VIEW 3: Skills List */}
-      {selectedCategory && selectedSubCategoryName && (
-        <ScrollView style={styles.listContainer}>
-          <Text style={styles.headerTitle}>{selectedSubCategoryName}</Text>
-          {selectedCategory.subCategories[selectedSubCategoryName].map((skill) => (
-            <TouchableOpacity
-              key={skill.$id}
-              style={styles.skillCard}
-              onPress={() => setSelectedSkill(skill)}
-            >
-              <View>
-                <Text style={styles.skillName}>{skill.name}</Text>
-                <Text style={styles.skillMeta}>
-                  {skill.difficulty} • ~{skill.estimatedHours}
+      ) : (
+        <>
+          {/* VIEW 1: Categories */}
+          {!selectedCategory && (
+            <ScrollView style={styles.listContainer}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Explore Categories</Text>
+              {categories.length === 0 ? (
+                <Text style={[styles.emptyText, { color: theme.subtext }]}>
+                  No skills found in database yet.
                 </Text>
-              </View>
-              <Text style={styles.infoBadge}>Info</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              ) : (
+                categories.map((category) => (
+                  <CategoryCard
+                    key={category.name}
+                    title={category.name}
+                    icon={category.icon}
+                    onPress={() => setSelectedCategory(category)}
+                  />
+                ))
+              )}
+            </ScrollView>
+          )}
+
+          {/* VIEW 2: Subcategories */}
+          {selectedCategory && !selectedSubCategoryName && (
+            <ScrollView style={styles.listContainer}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>
+                {selectedCategory.name}
+              </Text>
+              {Object.keys(selectedCategory.subCategories).map((subName) => {
+                const subSkillsCount = selectedCategory.subCategories[subName].filter(
+                  (s) => selectedDifficulty === 'All' || s.difficulty === selectedDifficulty
+                ).length;
+
+                return (
+                  <CategoryCard
+                    key={subName}
+                    title={subName}
+                    badgeCount={subSkillsCount}
+                    onPress={() => setSelectedSubCategoryName(subName)}
+                  />
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* VIEW 3: Filtered Subcategory Skills */}
+          {selectedCategory && selectedSubCategoryName && (
+            <ScrollView style={styles.listContainer}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>
+                {selectedSubCategoryName}
+              </Text>
+              {(() => {
+                const subCategorySkills = selectedCategory.subCategories[
+                  selectedSubCategoryName
+                ].filter(
+                  (s) => selectedDifficulty === 'All' || s.difficulty === selectedDifficulty
+                );
+
+                if (subCategorySkills.length === 0) {
+                  return (
+                    <Text style={[styles.emptyText, { color: theme.subtext }]}>
+                      No skills found for difficulty level "{selectedDifficulty}".
+                    </Text>
+                  );
+                }
+
+                return subCategorySkills.map((skill) => (
+                  <DiscoverSkillCard
+                    key={skill.$id}
+                    skill={skill}
+                    onPress={() => setSelectedSkill(skill)}
+                  />
+                ));
+              })()}
+            </ScrollView>
+          )}
+        </>
       )}
 
-      {/* SKILL DETAIL MODAL */}
-      <Modal
-        visible={!!selectedSkill}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedSkill(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {selectedSkill && (
-              <>
-                <Text style={styles.modalTitle}>{selectedSkill.name}</Text>
-
-                <View style={styles.tagRow}>
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>{selectedSkill.difficulty}</Text>
-                  </View>
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>⏳ {selectedSkill.estimatedHours}</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.modalDescriptionTitle}>Description</Text>
-                <Text style={styles.modalDescription}>{selectedSkill.description}</Text>
-
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => setSelectedSkill(null)}
-                  >
-                    <Text style={styles.cancelButtonText}>Close</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.learnButton}
-                    onPress={() => handleLearnSkill(selectedSkill)}
-                  >
-                    <Text style={styles.learnButtonText}>Learn Skill</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
+      {/* Skill Detail Modal Component */}
+      <SkillDetailModal
+        selectedSkill={selectedSkill}
+        onClose={() => setSelectedSkill(null)}
+        onLearnSkill={handleLearnSkill}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121214' },
+  container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
   listContainer: { padding: 16 },
-  headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
-  emptyText: { color: '#71717a', fontSize: 14, textAlign: 'center', marginTop: 32 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
+  emptyText: { fontSize: 14, textAlign: 'center', marginTop: 32 },
   breadcrumbBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#18181b',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
   },
-  backButtonText: { color: '#a78bfa', fontSize: 16, fontWeight: 'bold', marginRight: 16 },
-  breadcrumbTitle: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#18181b',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-  cardIcon: { fontSize: 20, marginRight: 12 },
-  cardTitle: { flex: 1, color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  chevron: { color: '#71717a', fontSize: 20 },
-  badge: { color: '#a78bfa', fontSize: 12, marginRight: 8 },
-  skillCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#18181b',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-  skillName: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  skillMeta: { color: '#a1a1aa', fontSize: 12, marginTop: 4 },
-  infoBadge: { color: '#a78bfa', fontSize: 13, fontWeight: 'bold' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.75)', justifyContent: 'flex-end' },
-  modalContent: {
-    backgroundColor: '#18181b',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-  modalTitle: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  tagRow: { flexDirection: 'row', marginBottom: 16 },
-  tag: { backgroundColor: '#27272a', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, marginRight: 8 },
-  tagText: { color: '#a78bfa', fontSize: 12, fontWeight: '600' },
-  modalDescriptionTitle: { color: '#888888', fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
-  modalDescription: { color: '#d4d4d8', fontSize: 14, lineHeight: 20, marginBottom: 24 },
-  modalActions: { flexDirection: 'row', justifyContent: 'space-between' },
-  cancelButton: { flex: 1, backgroundColor: '#27272a', paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginRight: 8 },
-  cancelButtonText: { color: '#ffffff', fontWeight: 'bold' },
-  learnButton: { flex: 1, backgroundColor: '#a78bfa', paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginLeft: 8 },
-  learnButtonText: { color: '#000000', fontWeight: 'bold' },
+  backButtonText: { fontSize: 16, fontWeight: 'bold', marginRight: 16 },
+  breadcrumbTitle: { fontSize: 16, fontWeight: 'bold' },
 });

@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, StyleSheet } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext'; // Adjust import path as needed
 import { useRouter } from 'expo-router';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
+  const { theme, mode, toggleTheme, isDark } = useTheme();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -18,43 +20,105 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#121214', padding: 16 }}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Profile Header */}
-      <View style={{ marginBottom: 24, padding: 16, backgroundColor: '#18181b', borderRadius: 8 }}>
-        <Text style={{ color: '#888', fontSize: 12 }}>LOGGED IN AS</Text>
-        <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginTop: 4 }}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.sectionLabel, { color: theme.subtext }]}>LOGGED IN AS</Text>
+        <Text style={[styles.userName, { color: theme.text }]}>
           {user?.name || 'User'}
         </Text>
-        <Text style={{ color: '#aaa', fontSize: 14 }}>{user?.email}</Text>
+        <Text style={[styles.userEmail, { color: theme.subtext }]}>{user?.email}</Text>
       </View>
 
       {/* Options List */}
-      <View style={{ backgroundColor: '#18181b', borderRadius: 8, marginBottom: 24 }}>
-        <TouchableOpacity style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#27272a' }}>
-          <Text style={{ color: '#fff', fontSize: 16 }}>Profile</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <TouchableOpacity
+          style={[styles.row, { borderBottomColor: theme.border }]}
+        >
+          <Text style={[styles.rowText, { color: theme.text }]}>Profile</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#27272a' }}>
-          <Text style={{ color: '#fff', fontSize: 16 }}>Theme</Text>
+        {/* Theme Toggle Button */}
+        <TouchableOpacity
+          style={[styles.row, styles.rowBetween, { borderBottomColor: theme.border }]}
+          onPress={toggleTheme}
+        >
+          <Text style={[styles.rowText, { color: theme.text }]}>Theme</Text>
+          <View style={[styles.themeBadge, { backgroundColor: theme.inputBg }]}>
+            <Text style={[styles.themeBadgeText, { color: theme.accent }]}>
+              {isDark ? '🌙 Dark' : '☀️ Light'}
+            </Text>
+          </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={{ padding: 16 }}>
-          <Text style={{ color: '#fff', fontSize: 16 }}>Help & Contact</Text>
+        <TouchableOpacity style={styles.row}>
+          <Text style={[styles.rowText, { color: theme.text }]}>Help & Contact</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Working Logout Button */}
+      {/* Logout Button */}
       <TouchableOpacity
-        style={{
-          backgroundColor: '#27272a',
-          padding: 16,
-          borderRadius: 8,
-          alignItems: 'center',
-        }}
+        style={[styles.logoutButton, { backgroundColor: theme.inputBg }]}
         onPress={handleLogout}
       >
-        <Text style={{ color: '#ff5555', fontSize: 16, fontWeight: 'bold' }}>Log Out</Text>
+        <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  card: {
+    borderRadius: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+    padding: 16,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+  },
+  row: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rowText: {
+    fontSize: 16,
+  },
+  themeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  themeBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  logoutButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: '#ff5555',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});

@@ -11,26 +11,16 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
+import { useTheme } from '../../context/ThemeContext';
+import { LevelCard } from '../../components/LevelCard';
+import { SkillItemCard, UserSkill } from '../../components/SkillItemCard';
 
-// Difficulty XP Rate Mapping
 const DIFFICULTY_XP: Record<string, number> = {
   Beginner: 10,
   Intermediate: 20,
   Advanced: 35,
 };
 
-type UserSkill = {
-  $id: string;
-  name: string;
-  category: string;
-  subCategory: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  status: string;
-  reps: number;
-  timeSpentSeconds: number;
-};
-
-// Gamification Formula Helpers
 const calculateSkillXP = (skill: UserSkill): number => {
   const rate = DIFFICULTY_XP[skill.difficulty] || 10;
   const repXP = (skill.reps || 0) * rate;
@@ -47,6 +37,7 @@ const getXpForLevel = (level: number): number => {
 };
 
 export default function HomeScreen() {
+  const { theme, isDark } = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('SkillPlus Learner');
@@ -68,7 +59,6 @@ export default function HomeScreen() {
       const currentUser = await account.get();
       setUserName(currentUser.name || currentUser.email.split('@')[0]);
 
-      // Fetch user's skills
       const response = await databases.listDocuments(dbId, userSkillsColId, [
         Query.equal('userId', currentUser.$id),
       ]);
@@ -84,7 +74,6 @@ export default function HomeScreen() {
         timeSpentSeconds: doc.timeSpentSeconds || 0,
       })) as UserSkill[];
 
-      // Calculate Total Appwrite XP across all logged skills
       const calculatedTotalXP = skillsData.reduce(
         (sum, skill) => sum + calculateSkillXP(skill),
         0
@@ -99,130 +88,90 @@ export default function HomeScreen() {
     }
   };
 
-  // Gamification Stats
   const currentLevel = getLevelFromXP(totalXP);
   const currentLevelBaseXP = getXpForLevel(currentLevel);
   const nextLevelBaseXP = getXpForLevel(currentLevel + 1);
   const xpInCurrentLevel = totalXP - currentLevelBaseXP;
   const xpNeededForNextLevel = nextLevelBaseXP - currentLevelBaseXP;
-  const levelProgress = Math.min(
-    Math.max(xpInCurrentLevel / xpNeededForNextLevel, 0),
-    1
-  );
+  const levelProgress = Math.min(Math.max(xpInCurrentLevel / xpNeededForNextLevel, 0), 1);
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#a78bfa" />
+      <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Section */}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{userName}</Text>
+            <Text style={[styles.greeting, { color: theme.subtext }]}>Welcome back,</Text>
+            <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
           </View>
-          <View style={styles.badge}>
+          <View style={[styles.badge, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <Text style={styles.badgeText}>⚡ Rank #{currentLevel}</Text>
           </View>
         </View>
 
-        {/* Level & XP Overview Card */}
-        <View style={styles.levelCard}>
-          <View style={styles.levelHeader}>
-            <View>
-              <Text style={styles.levelTitle}>Level {currentLevel}</Text>
-              <Text style={styles.levelSubtitle}>SkillPlus Mastery</Text>
-            </View>
-            <Text style={styles.xpText}>{totalXP.toLocaleString()} Total XP</Text>
-          </View>
+        {/* Level Overview Component */}
+        <LevelCard
+          currentLevel={currentLevel}
+          totalXP={totalXP}
+          levelProgress={levelProgress}
+          xpNeededForNextLevel={xpNeededForNextLevel}
+          xpInCurrentLevel={xpInCurrentLevel}
+        />
 
-          <View style={styles.progressBarBackground}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${Math.round(levelProgress * 100)}%` },
-              ]}
-            />
-          </View>
-
-          <View style={styles.progressFooter}>
-            <Text style={styles.progressSubtext}>
-              {xpNeededForNextLevel - xpInCurrentLevel} XP to Level {currentLevel + 1}
-            </Text>
-            <Text style={styles.progressSubtext}>
-              {Math.round(levelProgress * 100)}%
-            </Text>
-          </View>
-        </View>
-
-        {/* Active Skills Section */}
+        {/* Active Skills Header */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>In Progress Skills ({userSkills.length})</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            In Progress Skills ({userSkills.length})
+          </Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/skills')}>
-            <Text style={styles.seeAllText}>Manage Skills</Text>
+            <Text style={[styles.seeAllText, { color: theme.accent }]}>Manage Skills</Text>
           </TouchableOpacity>
         </View>
 
+        {/* Render Skill Cards using SkillItemCard Component */}
         {userSkills.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No active skills yet.</Text>
+          <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.emptyText, { color: theme.subtext }]}>No active skills yet.</Text>
             <TouchableOpacity
-              style={styles.discoverBtn}
+              style={[styles.discoverBtn, { backgroundColor: theme.accent }]}
               onPress={() => router.push('/(tabs)/discover')}
             >
-              <Text style={styles.discoverBtnText}>Explore Skills</Text>
+              <Text style={[styles.discoverBtnText, { color: isDark ? '#000000' : '#ffffff' }]}>
+                Explore Skills
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
           userSkills.slice(0, 4).map((skill) => {
             const skillXP = calculateSkillXP(skill);
             const skillLevel = getLevelFromXP(skillXP);
-
             return (
-              <View key={skill.$id} style={styles.skillCard}>
-                <View
-                  style={[
-                    styles.colorIndicator,
-                    {
-                      backgroundColor:
-                        skill.difficulty === 'Advanced'
-                          ? '#ff5252'
-                          : skill.difficulty === 'Intermediate'
-                          ? '#ffb86c'
-                          : '#61dafb',
-                    },
-                  ]}
-                />
-                <View style={styles.skillInfo}>
-                  <Text style={styles.skillTitle}>{skill.name}</Text>
-                  <Text style={styles.skillCategory}>
-                    {skill.category} • {skill.difficulty} • Lvl {skillLevel}
-                  </Text>
-                </View>
-                <View style={styles.xpBadge}>
-                  <Text style={styles.xpBadgeText}>+{skillXP} XP</Text>
-                </View>
-              </View>
+              <SkillItemCard
+                key={skill.$id}
+                skill={skill}
+                skillXP={skillXP}
+                skillLevel={skillLevel}
+              />
             );
           })
         )}
 
-        {/* Quick Action Button */}
         <TouchableOpacity
-          style={styles.quickActionButton}
+          style={[styles.quickActionButton, { backgroundColor: theme.accent }]}
           onPress={() => router.push('/(tabs)/skills')}
         >
-          <Text style={styles.quickActionText}>Start Practicing</Text>
+          <Text style={[styles.quickActionText, { color: isDark ? '#000000' : '#ffffff' }]}>
+            Start Practicing
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -230,18 +179,9 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121214',
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+  container: { flex: 1 },
+  center: { justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { padding: 20, paddingBottom: 40 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -249,164 +189,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 10,
   },
-  greeting: {
-    color: '#a1a1aa',
-    fontSize: 14,
-  },
-  userName: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  badge: {
-    backgroundColor: '#27272a',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#3f3f46',
-  },
-  badgeText: {
-    color: '#ffb86c',
-    fontWeight: 'bold',
-  },
-  levelCard: {
-    backgroundColor: '#1e1e24',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 28,
-    borderWidth: 1,
-    borderColor: '#2d2d38',
-  },
-  levelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  levelTitle: {
-    color: '#a78bfa',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  levelSubtitle: {
-    color: '#71717a',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  xpText: {
-    color: '#f4f4f5',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  progressBarBackground: {
-    height: 12,
-    backgroundColor: '#2d2d38',
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#a78bfa',
-    borderRadius: 6,
-  },
-  progressFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  progressSubtext: {
-    color: '#a1a1aa',
-    fontSize: 12,
-  },
+  greeting: { fontSize: 14 },
+  userName: { fontSize: 24, fontWeight: 'bold' },
+  badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  badgeText: { color: '#ffb86c', fontWeight: 'bold' },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  seeAllText: {
-    color: '#a78bfa',
-    fontWeight: '600',
-  },
-  emptyCard: {
-    backgroundColor: '#18181b',
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-  emptyText: {
-    color: '#71717a',
-    marginBottom: 12,
-  },
-  discoverBtn: {
-    backgroundColor: '#a78bfa',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  discoverBtnText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  skillCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#18181b',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-  colorIndicator: {
-    width: 8,
-    height: 38,
-    borderRadius: 4,
-    marginRight: 14,
-  },
-  skillInfo: {
-    flex: 1,
-  },
-  skillTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  skillCategory: {
-    color: '#71717a',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  xpBadge: {
-    backgroundColor: '#27272a',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  xpBadgeText: {
-    color: '#4caf50',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  quickActionButton: {
-    backgroundColor: '#8b5cf6',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  quickActionText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold' },
+  seeAllText: { fontWeight: '600' },
+  emptyCard: { padding: 20, borderRadius: 12, alignItems: 'center', marginBottom: 16, borderWidth: 1 },
+  emptyText: { marginBottom: 12 },
+  discoverBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  discoverBtnText: { fontWeight: 'bold' },
+  quickActionButton: { padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 12 },
+  quickActionText: { fontSize: 16, fontWeight: 'bold' },
 });
