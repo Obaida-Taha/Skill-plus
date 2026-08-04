@@ -8,8 +8,10 @@ import {
   Platform,
   Pressable,
   Keyboard,
+  Image,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 
 import GradientBackground from '../../components/ui/GradientBackground';
@@ -23,9 +25,9 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleLogin = async () => {
-    console.log('Login attempt started for:', email);
+  const insets = useSafeAreaInsets();
 
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -34,7 +36,6 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      console.log('Login successful, navigating to tabs...');
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Appwrite Login Error:', error);
@@ -49,13 +50,22 @@ export default function LoginScreen() {
 
   return (
     <GradientBackground>
-      {/* Pressable handles screen dismissal without blocking child component presses */}
       <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.innerContainer}
+          style={[styles.innerContainer, { paddingTop: Math.max(insets.top + 20, 40) }]}
         >
-          {/* Header */}
+          {/* Hero Section: Centered Big Icon */}
+          <View style={styles.topHeroSection}>
+            <View style={styles.iconBadge}>
+              <Image
+                source={require('../../../assets/images/loginicon/settings.png')}
+                style={styles.heroIcon}
+              />
+            </View>
+          </View>
+
+          {/* Text Header */}
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
@@ -107,9 +117,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+topHeroSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+  },
+  iconBadge: {
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 111, 0, 0.16)',
+    borderWidth: 2,
+    borderColor: '#FF6F00',
+    justifyContent: 'center', // Centers vertically
+    alignItems: 'center',     // Centers horizontally
+    shadowColor: '#FF6F00',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  heroIcon: {
+    width: 52,
+    height: 52,
+    resizeMode: 'contain',
+    tintColor: '#FF6F00',
   },
   headerContainer: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   title: {
     fontSize: 34,
