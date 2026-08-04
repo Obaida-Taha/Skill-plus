@@ -13,8 +13,8 @@ import { useFocusEffect } from 'expo-router';
 import { Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
 import { useTheme } from '../../context/ThemeContext';
-import { SkillControlCard, UserSkill } from '../../components/SkillControlCard';
-import { EmptySkillsCard } from '../../components/EmptySkillsCard';
+import { SkillControlCard, UserSkill } from '../../components/skills/SkillControlCard';
+import { EmptySkillsCard } from '../../components/skills/EmptySkillsCard';
 
 export default function SkillsScreen() {
   const { theme, isDark } = useTheme();

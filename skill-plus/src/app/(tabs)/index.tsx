@@ -12,8 +12,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
 import { useTheme } from '../../context/ThemeContext';
-import { LevelCard } from '../../components/LevelCard';
-import { SkillItemCard, UserSkill } from '../../components/SkillItemCard';
+import { LevelCard } from '../../components/home/LevelCard';
+import { SkillItemCard, UserSkill } from '../../components/home/SkillItemCard';
 
 const DIFFICULTY_XP: Record<string, number> = {
   Beginner: 10,

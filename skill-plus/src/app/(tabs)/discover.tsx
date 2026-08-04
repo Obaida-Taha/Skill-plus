@@ -16,10 +16,10 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   SearchFilterHeader,
   DifficultyType,
-} from '../../components/SearchFilterHeader';
-import { CategoryCard } from '../../components/CategoryCard';
-import { DiscoverSkillCard, SkillItem } from '../../components/DiscoverSkillCard';
-import { SkillDetailModal } from '../../components/SkillDetailModal';
+} from '../../components/discover/SearchFilterHeader';
+import { CategoryCard } from '../../components/discover/CategoryCard';
+import { DiscoverSkillCard, SkillItem } from '../../components/discover/DiscoverSkillCard';
+import { SkillDetailModal } from '../../components/modals/SkillDetailModal';
 
 type CategoryGroup = {
   name: string;
@@ -228,7 +228,7 @@ export default function DiscoverScreen() {
         </ScrollView>
       ) : (
         <>
-          {/* VIEW 1: Categories */}
+          {/* VIEW 1: Categories Grid */}
           {!selectedCategory && (
             <ScrollView style={styles.listContainer}>
               <Text style={[styles.headerTitle, { color: theme.text }]}>Explore Categories</Text>
@@ -237,38 +237,42 @@ export default function DiscoverScreen() {
                   No skills found in database yet.
                 </Text>
               ) : (
-                categories.map((category) => (
-                  <CategoryCard
-                    key={category.name}
-                    title={category.name}
-                    icon={category.icon}
-                    onPress={() => setSelectedCategory(category)}
-                  />
-                ))
+                <View style={styles.gridContainer}>
+                  {categories.map((category) => (
+                    <CategoryCard
+                      key={category.name}
+                      title={category.name}
+                      icon={category.icon}
+                      onPress={() => setSelectedCategory(category)}
+                    />
+                  ))}
+                </View>
               )}
             </ScrollView>
           )}
 
-          {/* VIEW 2: Subcategories */}
+          {/* VIEW 2: Subcategories Grid */}
           {selectedCategory && !selectedSubCategoryName && (
             <ScrollView style={styles.listContainer}>
               <Text style={[styles.headerTitle, { color: theme.text }]}>
                 {selectedCategory.name}
               </Text>
-              {Object.keys(selectedCategory.subCategories).map((subName) => {
-                const subSkillsCount = selectedCategory.subCategories[subName].filter(
-                  (s) => selectedDifficulty === 'All' || s.difficulty === selectedDifficulty
-                ).length;
+              <View style={styles.gridContainer}>
+                {Object.keys(selectedCategory.subCategories).map((subName) => {
+                  const subSkillsCount = selectedCategory.subCategories[subName].filter(
+                    (s) => selectedDifficulty === 'All' || s.difficulty === selectedDifficulty
+                  ).length;
 
-                return (
-                  <CategoryCard
-                    key={subName}
-                    title={subName}
-                    badgeCount={subSkillsCount}
-                    onPress={() => setSelectedSubCategoryName(subName)}
-                  />
-                );
-              })}
+                  return (
+                    <CategoryCard
+                      key={subName}
+                      title={subName}
+                      badgeCount={subSkillsCount}
+                      onPress={() => setSelectedSubCategoryName(subName)}
+                    />
+                  );
+                })}
+              </View>
             </ScrollView>
           )}
 
@@ -330,5 +334,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backButtonText: { fontSize: 16, fontWeight: 'bold', marginRight: 16 },
-  breadcrumbTitle: { fontSize: 16, fontWeight: 'bold' },
+  breadcrumbTitle: { fontSize: 16, fontWeight: 'bold' },gridContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+},
 });

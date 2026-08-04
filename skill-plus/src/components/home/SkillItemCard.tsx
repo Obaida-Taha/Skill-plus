@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../context/ThemeContext'; // Adjust relative path if needed
+import { useTheme } from '../../context/ThemeContext'; // Adjust relative path if needed
 
 export type UserSkill = {
   $id: string;
