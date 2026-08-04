@@ -16,6 +16,7 @@ import { account, databases } from '../lib/appwrite';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
+import { ScreenWrapper } from '../components/bottomNavTab/ScreenWrapper';
 import { ProfileHeroCard } from '../components/profile/ProfileHeroCard';
 import { ProfileStatsRow } from '../components/profile/ProfileStatsRow';
 import { ProfileInfoCard } from '../components/profile/ProfileInfoCard';
@@ -98,66 +99,78 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.accent} />
-      </View>
+      <ScreenWrapper style={{ backgroundColor: theme.background }}>
+        <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
+          <ActivityIndicator size="large" color={theme.accent} />
+        </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Navigation Bar */}
-        <View style={styles.navHeader}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={[styles.backText, { color: theme.accent }]}>← Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.editBtn, { backgroundColor: isEditing ? theme.accent : theme.card, borderColor: theme.border }]}
-            onPress={isEditing ? handleSaveProfile : () => setIsEditing(true)}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={[styles.editBtnText, { color: isEditing ? (isDark ? '#000000' : '#FFFFFF') : theme.text }]}>
-                {isEditing ? 'Save' : 'Edit Profile'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+    <ScreenWrapper style={{ backgroundColor: theme.background }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Navigation Bar */}
+          <View style={styles.navHeader}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <Text style={[styles.backText, { color: theme.accent }]}>← Back</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.editBtn,
+                { backgroundColor: isEditing ? theme.accent : theme.card, borderColor: theme.border },
+              ]}
+              onPress={isEditing ? handleSaveProfile : () => setIsEditing(true)}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={[
+                    styles.editBtnText,
+                    { color: isEditing ? (isDark ? '#000000' : '#FFFFFF') : theme.text },
+                  ]}
+                >
+                  {isEditing ? 'Save' : 'Edit Profile'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
-        {/* 1. Hero Card & Stats Row */}
-        <ProfileHeroCard displayName={displayName} joinedDate={joinedDate}>
-          <ProfileStatsRow
-            currentLevel={currentLevel}
-            totalXP={totalXP}
-            streakDays={streakDays}
-            userSkillsCount={userSkillsCount}
+          {/* 1. Hero Card & Stats Row */}
+          <ProfileHeroCard displayName={displayName} joinedDate={joinedDate}>
+            <ProfileStatsRow
+              currentLevel={currentLevel}
+              totalXP={totalXP}
+              streakDays={streakDays}
+              userSkillsCount={userSkillsCount}
+            />
+          </ProfileHeroCard>
+
+          {/* 2. Account Information Card */}
+          <ProfileInfoCard
+            isEditing={isEditing}
+            displayName={displayName}
+            setDisplayName={setDisplayName}
+            bioTagline={bioTagline}
+            setBioTagline={setBioTagline}
+            email={user?.email}
           />
-        </ProfileHeroCard>
-
-        {/* 2. Account Information Card */}
-        <ProfileInfoCard
-          isEditing={isEditing}
-          displayName={displayName}
-          setDisplayName={setDisplayName}
-          bioTagline={bioTagline}
-          setBioTagline={setBioTagline}
-          email={user?.email}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { padding: 20, paddingBottom: 40 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   navHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
