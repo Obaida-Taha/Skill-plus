@@ -14,6 +14,7 @@ import { account, databases } from '../../lib/appwrite';
 import { useTheme } from '../../context/ThemeContext';
 import { LevelCard } from '../../components/LevelCard';
 import { SkillItemCard, UserSkill } from '../../components/SkillItemCard';
+import { CategoryStatsCard } from '../../components/CategoryStatsCard';
 
 const DIFFICULTY_XP: Record<string, number> = {
   Beginner: 10,
@@ -126,6 +127,9 @@ export default function HomeScreen() {
           xpNeededForNextLevel={xpNeededForNextLevel}
           xpInCurrentLevel={xpInCurrentLevel}
         />
+
+        {/* Category Statistics Component */}
+        <CategoryStatsCard skills={userSkills} />
 
         {/* Active Skills Header */}
         <View style={styles.sectionHeader}>
