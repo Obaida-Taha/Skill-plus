@@ -12,6 +12,13 @@ interface CategoryCardProps {
 export function CategoryCard({ title, icon, badgeCount, onPress }: CategoryCardProps) {
   const { theme } = useTheme();
 
+  // Type-safe check using optional chaining to avoid TS(18048)
+  const hasValidIcon =
+    typeof icon === 'string' &&
+    icon !== 'null' &&
+    icon !== 'NULL' &&
+    icon.trim() !== '';
+
   return (
     <TouchableOpacity
       style={[styles.pillCard, { backgroundColor: theme.card, borderColor: theme.border }]}
@@ -19,9 +26,9 @@ export function CategoryCard({ title, icon, badgeCount, onPress }: CategoryCardP
       activeOpacity={0.7}
     >
       {/* Top Row: Icon + Badge (if present) */}
-      {(icon || badgeCount !== undefined) && (
+      {(hasValidIcon || badgeCount !== undefined) && (
         <View style={styles.topRow}>
-          {icon ? <Text style={styles.cardIcon}>{icon}</Text> : null}
+          {hasValidIcon ? <Text style={styles.cardIcon}>{icon}</Text> : null}
           {badgeCount !== undefined && (
             <View style={[styles.badgeContainer, { backgroundColor: theme.border }]}>
               <Text style={[styles.badgeText, { color: theme.accent }]}>{badgeCount}</Text>
@@ -30,7 +37,7 @@ export function CategoryCard({ title, icon, badgeCount, onPress }: CategoryCardP
         </View>
       )}
 
-      {/* Title wraps onto multiple lines automatically */}
+      {/* Title */}
       <Text style={[styles.cardTitle, { color: theme.text }]}>
         {title}
       </Text>
@@ -41,10 +48,10 @@ export function CategoryCard({ title, icon, badgeCount, onPress }: CategoryCardP
 const styles = StyleSheet.create({
   pillCard: {
     width: 160,
-    minHeight: 61, 
-    borderRadius: 24, 
+    minHeight: 61,
+    borderRadius: 24,
     borderWidth: 1,
-    flexDirection: 'column', 
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
@@ -63,7 +70,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
-    flexWrap: 'wrap', // Forces long text to drop down onto a new line
+    flexWrap: 'wrap',
   },
   badgeContainer: {
     marginLeft: 4,

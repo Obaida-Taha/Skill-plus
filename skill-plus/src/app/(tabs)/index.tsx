@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Text,
   View,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
@@ -12,9 +11,11 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
 import { useTheme } from '../../context/ThemeContext';
+import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
 import { LevelCard } from '../../components/home/LevelCard';
 import { SkillItemCard, UserSkill } from '../../components/home/SkillItemCard';
 import { CategoryStatsCard } from '../../components/CategoryStatsCard';
+
 const DIFFICULTY_XP: Record<string, number> = {
   Beginner: 10,
   Intermediate: 20,
@@ -106,7 +107,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScreenWrapper>
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -176,7 +177,7 @@ export default function HomeScreen() {
             Start Practicing
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </ScreenWrapper>
     </View>
   );
 }
@@ -184,7 +185,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { padding: 20, paddingBottom: 40 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
