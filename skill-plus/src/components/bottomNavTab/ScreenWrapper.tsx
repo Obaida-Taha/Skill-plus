@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, View, ScrollView, ViewStyle } from 'react-native';
 import { useBottomTabBarHeight } from 'expo-router/tabs';
+import { useScrollToTop } from 'expo-router';
 
 interface ScreenWrapperProps {
   children: React.ReactNode;
@@ -15,6 +16,11 @@ export function ScreenWrapper({
   contentContainerStyle,
   scrollable = true,
 }: ScreenWrapperProps) {
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Automatically scroll to top when active tab bar icon is tapped
+  useScrollToTop(scrollViewRef);
+
   let tabBarHeight = 0;
 
   try {
@@ -36,6 +42,7 @@ export function ScreenWrapper({
 
   return (
     <ScrollView
+      ref={scrollViewRef}
       style={[styles.container, style]}
       contentContainerStyle={[
         styles.scrollContent,
