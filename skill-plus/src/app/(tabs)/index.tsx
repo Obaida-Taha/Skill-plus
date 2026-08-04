@@ -14,7 +14,7 @@ import { account, databases } from '../../lib/appwrite';
 import { useTheme } from '../../context/ThemeContext';
 import { LevelCard } from '../../components/home/LevelCard';
 import { SkillItemCard, UserSkill } from '../../components/home/SkillItemCard';
-
+import { CategoryStatsCard } from '../../components/CategoryStatsCard';
 const DIFFICULTY_XP: Record<string, number> = {
   Beginner: 10,
   Intermediate: 20,
