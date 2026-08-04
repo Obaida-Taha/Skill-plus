@@ -127,6 +127,9 @@ export default function HomeScreen() {
           xpInCurrentLevel={xpInCurrentLevel}
         />
 
+        {/* Category Statistics Component */}
+        <CategoryStatsCard skills={userSkills} />
+
         {/* Active Skills Header */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
