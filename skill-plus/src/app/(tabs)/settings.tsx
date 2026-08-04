@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Alert, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext'; // Adjust import path as needed
+import { useTheme } from '../../context/ThemeContext';
 import { useRouter } from 'expo-router';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
-  const { theme, mode, toggleTheme, isDark } = useTheme();
+  const { theme, isDark, toggleTheme } = useTheme();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -17,6 +17,13 @@ export default function SettingsScreen() {
       console.error('Logout error:', error);
       Alert.alert('Error', 'Failed to log out');
     }
+  };
+
+  const handleNavigateProfile = () => {
+    console.log('Navigating to profile screen...');
+    // If your file is at src/app/profile.tsx use '/profile'
+    // If your file is inside tabs (src/app/(tabs)/profile.tsx) use '/(tabs)/profile'
+    router.push('/profile');
   };
 
   return (
@@ -32,15 +39,27 @@ export default function SettingsScreen() {
 
       {/* Options List */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <TouchableOpacity
-          style={[styles.row, { borderBottomColor: theme.border }]}
+        
+        {/* Profile Navigation Button using Pressable */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.row,
+            styles.rowBetween,
+            { borderBottomColor: theme.border, opacity: pressed ? 0.7 : 1 },
+          ]}
+          onPress={handleNavigateProfile}
         >
           <Text style={[styles.rowText, { color: theme.text }]}>Profile</Text>
-        </TouchableOpacity>
+          <Text style={{ color: theme.subtext, fontSize: 16 }}>›</Text>
+        </Pressable>
 
         {/* Theme Toggle Button */}
-        <TouchableOpacity
-          style={[styles.row, styles.rowBetween, { borderBottomColor: theme.border }]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.row,
+            styles.rowBetween,
+            { borderBottomColor: theme.border, opacity: pressed ? 0.7 : 1 },
+          ]}
           onPress={toggleTheme}
         >
           <Text style={[styles.rowText, { color: theme.text }]}>Theme</Text>
@@ -49,20 +68,24 @@ export default function SettingsScreen() {
               {isDark ? '🌙 Dark' : '☀️ Light'}
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity style={styles.row}>
+        {/* Help & Contact */}
+        <Pressable style={styles.row}>
           <Text style={[styles.rowText, { color: theme.text }]}>Help & Contact</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity
-        style={[styles.logoutButton, { backgroundColor: theme.inputBg }]}
+      <Pressable
+        style={({ pressed }) => [
+          styles.logoutButton,
+          { backgroundColor: theme.inputBg, opacity: pressed ? 0.8 : 1 },
+        ]}
         onPress={handleLogout}
       >
         <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -73,8 +96,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    borderRadius: 8,
-    marginBottom: 24,
+    borderRadius: 12,
+    marginBottom: 20,
     borderWidth: 1,
     padding: 16,
   },
@@ -83,7 +106,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   userName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginTop: 4,
   },
@@ -113,7 +136,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
   },
   logoutText: {
