@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -13,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { ID, Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
 import { useTheme } from '../../context/ThemeContext';
+import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
 import {
   SearchFilterHeader,
   DifficultyType,
@@ -207,7 +207,7 @@ export default function DiscoverScreen() {
 
       {/* VIEW A: Search Results */}
       {isSearching ? (
-        <ScrollView style={styles.listContainer}>
+        <ScreenWrapper contentContainerStyle={styles.listContainer}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
             Search Results ({filteredSkills.length})
           </Text>
@@ -225,12 +225,12 @@ export default function DiscoverScreen() {
               />
             ))
           )}
-        </ScrollView>
+        </ScreenWrapper>
       ) : (
         <>
           {/* VIEW 1: Categories Grid */}
           {!selectedCategory && (
-            <ScrollView style={styles.listContainer}>
+            <ScreenWrapper contentContainerStyle={styles.listContainer}>
               <Text style={[styles.headerTitle, { color: theme.text }]}>Explore Categories</Text>
               {categories.length === 0 ? (
                 <Text style={[styles.emptyText, { color: theme.subtext }]}>
@@ -248,12 +248,12 @@ export default function DiscoverScreen() {
                   ))}
                 </View>
               )}
-            </ScrollView>
+            </ScreenWrapper>
           )}
 
           {/* VIEW 2: Subcategories Grid */}
           {selectedCategory && !selectedSubCategoryName && (
-            <ScrollView style={styles.listContainer}>
+            <ScreenWrapper contentContainerStyle={styles.listContainer}>
               <Text style={[styles.headerTitle, { color: theme.text }]}>
                 {selectedCategory.name}
               </Text>
@@ -273,12 +273,12 @@ export default function DiscoverScreen() {
                   );
                 })}
               </View>
-            </ScrollView>
+            </ScreenWrapper>
           )}
 
           {/* VIEW 3: Filtered Subcategory Skills */}
           {selectedCategory && selectedSubCategoryName && (
-            <ScrollView style={styles.listContainer}>
+            <ScreenWrapper contentContainerStyle={styles.listContainer}>
               <Text style={[styles.headerTitle, { color: theme.text }]}>
                 {selectedSubCategoryName}
               </Text>
@@ -305,7 +305,7 @@ export default function DiscoverScreen() {
                   />
                 ));
               })()}
-            </ScrollView>
+            </ScreenWrapper>
           )}
         </>
       )}
@@ -334,9 +334,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backButtonText: { fontSize: 16, fontWeight: 'bold', marginRight: 16 },
-  breadcrumbTitle: { fontSize: 16, fontWeight: 'bold' },gridContainer: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  justifyContent: 'space-between',
-},
+  breadcrumbTitle: { fontSize: 16, fontWeight: 'bold' },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
 });

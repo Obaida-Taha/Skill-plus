@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -13,6 +12,7 @@ import { useFocusEffect } from 'expo-router';
 import { Query } from 'react-native-appwrite';
 import { account, databases } from '../../lib/appwrite';
 import { useTheme } from '../../context/ThemeContext';
+import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
 import { SkillControlCard, UserSkill } from '../../components/skills/SkillControlCard';
 import { EmptySkillsCard } from '../../components/skills/EmptySkillsCard';
 
@@ -195,7 +195,7 @@ export default function SkillsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScreenWrapper contentContainerStyle={{ padding: 16 }}>
         <Text style={[styles.header, { color: theme.text }]}>My Skills</Text>
 
         {userSkills.length === 0 ? (
@@ -214,7 +214,7 @@ export default function SkillsScreen() {
             />
           ))
         )}
-      </ScrollView>
+      </ScreenWrapper>
     </View>
   );
 }

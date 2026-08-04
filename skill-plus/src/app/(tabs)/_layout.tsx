@@ -37,7 +37,7 @@ export default function TabsLayout() {
           shadowOpacity: isDark ? 0.4 : 0.15,
           shadowRadius: 12,
           elevation: 8,
-          paddingBottom: 0, // Prevents OS spacing offset inside the floating pill
+          paddingBottom: 0,
         },
         tabBarItemStyle: {
           height: 64,
@@ -52,13 +52,12 @@ export default function TabsLayout() {
         },
       }}
     >
-      {/* Home Tab */}
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
           headerTitle: 'SkillPlus',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
               <Ionicons
                 name={focused ? 'grid' : 'grid-outline'}
@@ -70,13 +69,12 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Skills Tab */}
       <Tabs.Screen
         name="skills"
         options={{
           title: 'Skills',
           headerTitle: 'My Skills',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
               <Ionicons
                 name={focused ? 'barbell' : 'barbell-outline'}
@@ -88,13 +86,12 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Discover Tab */}
       <Tabs.Screen
         name="discover"
         options={{
           title: 'Discover',
           headerTitle: 'Explore Skills',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
               <Ionicons
                 name={focused ? 'compass' : 'compass-outline'}
@@ -106,13 +103,12 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Settings Tab */}
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
           headerTitle: 'Settings',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
               <Ionicons
                 name={focused ? 'options' : 'options-outline'}
@@ -136,6 +132,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeIconBg: {
-    backgroundColor: 'rgba(255, 111, 0, 0.15)', // Orange glow background pill
+    backgroundColor: 'rgba(255, 111, 0, 0.15)',
   },
 });
