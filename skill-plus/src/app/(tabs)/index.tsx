@@ -96,6 +96,10 @@ export default function HomeScreen() {
   const xpNeededForNextLevel = nextLevelBaseXP - currentLevelBaseXP;
   const levelProgress = Math.min(Math.max(xpInCurrentLevel / xpNeededForNextLevel, 0), 1);
 
+  // Filter skills by status
+  const completedSkills = userSkills.filter((s) => s.status === 'Completed');
+  const inProgressSkills = userSkills.filter((s) => s.status !== 'Completed');
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
@@ -108,7 +112,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <ScreenWrapper>
-        {/* Header */}
+        {/* Header (Welcome back & Rank) */}
         <View style={styles.header}>
           <View>
             <Text style={[styles.greeting, { color: theme.subtext }]}>Welcome back,</Text>
@@ -134,17 +138,17 @@ export default function HomeScreen() {
         {/* Active Skills Header */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            In Progress Skills ({userSkills.length})
+            In Progress Skills ({inProgressSkills.length})
           </Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/skills')}>
             <Text style={[styles.seeAllText, { color: theme.accent }]}>Manage Skills</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Render Skill Cards using SkillItemCard Component */}
-        {userSkills.length === 0 ? (
+        {/* Render Active Skills */}
+        {inProgressSkills.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.emptyText, { color: theme.subtext }]}>No active skills yet.</Text>
+            <Text style={[styles.emptyText, { color: theme.subtext }]}>No active skills in progress.</Text>
             <TouchableOpacity
               style={[styles.discoverBtn, { backgroundColor: theme.accent }]}
               onPress={() => router.push('/(tabs)/discover')}
@@ -155,7 +159,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          userSkills.slice(0, 4).map((skill) => {
+          inProgressSkills.slice(0, 4).map((skill) => {
             const skillXP = calculateSkillXP(skill);
             const skillLevel = getLevelFromXP(skillXP);
             return (
@@ -189,19 +193,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12, // Reduced from 24
-    marginTop: 4,     // Reduced from 10
+    marginBottom: 12,
+    marginTop: 4,
   },
-  greeting: { fontSize: 13 }, // Reduced from 14
-  userName: { fontSize: 22, fontWeight: 'bold' }, // Reduced from 24
+  greeting: { fontSize: 13 },
+  userName: { fontSize: 22, fontWeight: 'bold' },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   badgeText: { color: '#ffb86c', fontWeight: 'bold' },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10, // Reduced from 16
-    marginTop: 8,     // Added tight top spacing
+    marginBottom: 10,
+    marginTop: 8,
   },
   sectionTitle: { fontSize: 17, fontWeight: 'bold' },
   seeAllText: { fontWeight: '600' },
@@ -209,6 +213,6 @@ const styles = StyleSheet.create({
   emptyText: { marginBottom: 10 },
   discoverBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   discoverBtnText: { fontWeight: 'bold' },
-  quickActionButton: { padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 }, // Padding reduced to 14, margin to 8
+  quickActionButton: { padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 },
   quickActionText: { fontSize: 15, fontWeight: 'bold' },
 });

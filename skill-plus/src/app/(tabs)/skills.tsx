@@ -14,9 +14,9 @@ import { Client, Databases, Account, Query } from 'react-native-appwrite';
 
 import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
 import { SkillControlCard } from '../../components/skills/SkillControlCard';
+import { CompletedSkillsCard } from '../../components/home/CompletedSkillsCard';
 import { useTheme } from '../../context/ThemeContext';
 
-// Centralized Appwrite setup using EXPO_PUBLIC environment variables
 const client = new Client()
   .setEndpoint(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!)
   .setProject(process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!);
@@ -32,13 +32,15 @@ export type UserSkill = {
   name: string;
   category: string;
   subCategory: string;
-  difficulty: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | string; // <-- Updated type
   status: 'In Progress' | 'Paused' | 'Completed';
   reps: number;
   timeSpentSeconds: number;
   isTimerRunning?: boolean;
   timerStartedAt?: string | null;
 };
+
+type FilterType = 'All' | 'In Progress' | 'Paused' | 'Completed';
 
 export default function SkillsScreen() {
   const router = useRouter();
@@ -48,6 +50,7 @@ export default function SkillsScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [activeTimerSkillId, setActiveTimerSkillId] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('In Progress');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -198,18 +201,21 @@ export default function SkillsScreen() {
     updateSkillInAppwrite(skillId, { reps: newReps });
   };
 
-  const updateSkillStatus = (skillId: string, newStatus: 'In Progress' | 'Paused') => {
+  const updateSkillStatus = (
+    skillId: string,
+    newStatus: 'In Progress' | 'Paused' | 'Completed'
+  ) => {
     updateSkillInAppwrite(skillId, { status: newStatus });
   };
 
   const handleRemoveSkill = (skillId: string, skillName: string) => {
     Alert.alert(
       'Remove Skill',
-      `Are you sure you want to remove "${skillName}" from your active skills?`,
+      `Are you sure you want to permanently delete "${skillName}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Remove',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             if (activeTimerSkillId === skillId && timerRef.current) {
@@ -228,6 +234,13 @@ export default function SkillsScreen() {
     );
   };
 
+  // Filter skills based on tab selection
+  const completedSkills = userSkills.filter((s) => s.status === 'Completed');
+  const filteredSkills = userSkills.filter((s) => {
+    if (selectedFilter === 'All') return true;
+    return s.status === selectedFilter;
+  });
+
   return (
     <ScreenWrapper style={{ backgroundColor: theme.background }}>
       <ScrollView
@@ -245,7 +258,7 @@ export default function SkillsScreen() {
           </View>
           <TouchableOpacity
             style={[styles.addBtn, { backgroundColor: theme.accent }]}
-            onPress={() => router.push('/discover')}
+            onPress={() => router.push('/(tabs)/discover')}
           >
             <Text style={[styles.addBtnText, { color: isDark ? '#000000' : '#ffffff' }]}>
               + Add Skill
@@ -253,30 +266,70 @@ export default function SkillsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* 1. TOP COMPONENT: Showcase Mastered/Completed Skills First */}
+        <CompletedSkillsCard skills={completedSkills} />
+
+        {/* 2. FILTER TABS BAR: In Progress | Paused | Finished | All */}
+        <View style={styles.filterContainer}>
+          {(['In Progress', 'Paused', 'Completed', 'All'] as FilterType[]).map((tab) => {
+            const isActive = selectedFilter === tab;
+            const label = tab === 'Completed' ? 'Finished' : tab;
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  styles.filterTab,
+                  isActive
+                    ? { backgroundColor: theme.accent }
+                    : { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+                onPress={() => setSelectedFilter(tab)}
+              >
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    isActive
+                      ? { color: isDark ? '#000000' : '#ffffff', fontWeight: 'bold' }
+                      : { color: theme.subtext },
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {/* Loading Spinner */}
         {loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={theme.accent} />
           </View>
-        ) : userSkills.length === 0 ? (
-          /* Empty State */
+        ) : filteredSkills.length === 0 ? (
+          /* Empty State for Selected Filter */
           <View style={[styles.emptyBox, { borderColor: theme.border }]}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No skills added yet</Text>
-            <Text style={[styles.emptySubtitle, { color: theme.subtext }]}>
-              Explore the discover tab to select and track skills you want to master.
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>
+              No {selectedFilter === 'Completed' ? 'Finished' : selectedFilter} Skills
             </Text>
-            <TouchableOpacity
-              style={[styles.emptyBtn, { backgroundColor: theme.accent }]}
-              onPress={() => router.push('/discover')}
-            >
-              <Text style={[styles.emptyBtnText, { color: isDark ? '#000000' : '#ffffff' }]}>
-                Browse Skills
-              </Text>
-            </TouchableOpacity>
+            <Text style={[styles.emptySubtitle, { color: theme.subtext }]}>
+              {selectedFilter === 'In Progress'
+                ? 'Select a skill to start practicing or add a new one from Discover.'
+                : `No skills currently marked as ${selectedFilter.toLowerCase()}.`}
+            </Text>
+            {userSkills.length === 0 && (
+              <TouchableOpacity
+                style={[styles.emptyBtn, { backgroundColor: theme.accent }]}
+                onPress={() => router.push('/(tabs)/discover')}
+              >
+                <Text style={[styles.emptyBtnText, { color: isDark ? '#000000' : '#ffffff' }]}>
+                  Browse Skills
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           /* Skills List */
-          userSkills.map((skill) => (
+          filteredSkills.map((skill) => (
             <SkillControlCard
               key={skill.$id}
               skill={skill}
@@ -296,61 +349,41 @@ export default function SkillsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    flexGrow: 1,
-  },
+  container: { padding: 16 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  addBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addBtnText: {
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
-  centerContainer: {
-    paddingVertical: 50,
-    alignItems: 'center',
-  },
-  emptyBox: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    textAlign: 'center',
     marginBottom: 16,
   },
-  emptyBtn: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+  title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 13, marginTop: 2 },
+  addBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  addBtnText: { fontWeight: 'bold', fontSize: 13 },
+  filterContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 8,
     borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
-  emptyBtnText: {
-    fontWeight: 'bold',
-    fontSize: 14,
+  filterTabText: { fontSize: 12 },
+  centerContainer: { paddingVertical: 40, alignItems: 'center' },
+  emptyBox: {
+    padding: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    marginTop: 10,
   },
+  emptyTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 6 },
+  emptySubtitle: { fontSize: 13, textAlign: 'center', marginBottom: 14 },
+  emptyBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  emptyBtnText: { fontWeight: 'bold', fontSize: 14 },
 });
