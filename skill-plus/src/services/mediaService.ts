@@ -1,5 +1,7 @@
 import { Client, Databases, ID, Query } from 'react-native-appwrite';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
 
 const client = new Client()
   .setEndpoint(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!)
@@ -8,7 +10,7 @@ const client = new Client()
 const databases = new Databases(client);
 
 const DB_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
-const BUCKET_ID = '6a733f9b0016d752f026'; // skill_proofs bucket ID
+const BUCKET_ID = '6a733f9b0016d752f026';
 const MEDIA_LOGS_COL_ID = 'media_logs';
 
 export type MediaLog = {
@@ -21,9 +23,7 @@ export type MediaLog = {
   completedAt: string;
 };
 
-/**
- * Open Media Gallery with base64 enabled
- */
+// 1. Pick media from phone library
 export const pickMediaFromGallery = async (): Promise<ImagePicker.ImagePickerAsset | null> => {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
@@ -35,7 +35,6 @@ export const pickMediaFromGallery = async (): Promise<ImagePicker.ImagePickerAss
     mediaTypes: ['images', 'videos'],
     quality: 0.7,
     allowsEditing: true,
-    base64: true, // Key: Converts image directly to memory
   });
 
   if (!result.canceled && result.assets.length > 0) {
@@ -44,9 +43,7 @@ export const pickMediaFromGallery = async (): Promise<ImagePicker.ImagePickerAss
   return null;
 };
 
-/**
- * Open Device Camera with base64 enabled
- */
+// 2. Capture media using phone camera
 export const captureMediaFromCamera = async (): Promise<ImagePicker.ImagePickerAsset | null> => {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) {
@@ -58,7 +55,6 @@ export const captureMediaFromCamera = async (): Promise<ImagePicker.ImagePickerA
     mediaTypes: ['images', 'videos'],
     quality: 0.7,
     allowsEditing: true,
-    base64: true, // Key: Converts image directly to memory
   });
 
   if (!result.canceled && result.assets.length > 0) {
@@ -67,9 +63,7 @@ export const captureMediaFromCamera = async (): Promise<ImagePicker.ImagePickerA
   return null;
 };
 
-/**
- * Reliable Direct Upload to Appwrite Storage & Database
- */
+// 3. Upload file to Appwrite Storage & save metadata in DB
 export const uploadSkillProof = async (
   userId: string,
   skillId: string,
@@ -79,38 +73,63 @@ export const uploadSkillProof = async (
   const endpoint = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!;
   const projectId = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
   const fileId = ID.unique();
-  const fileType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
-  const fileName = `proof_${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
 
-  // Step A: Convert asset URI to a raw Blob (Works 100% reliably across Android/iOS)
-  const fileData = await fetch(asset.uri);
-  const blob = await fileData.blob();
+  const ext = asset.type === 'video' ? 'mp4' : 'jpg';
+  const fileName = `proof_${Date.now()}.${ext}`;
+  const mimeType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
 
-  // Step B: Build clean multipart body without React Native FormData bugs
-  const formData = new FormData();
-  formData.append('fileId', fileId);
-  formData.append('file', blob, fileName);
+  const uploadUrl = `${endpoint}/storage/buckets/${BUCKET_ID}/files`;
 
-  // Step C: Send directly to Appwrite REST Storage API
-  const response = await fetch(`${endpoint}/storage/buckets/${BUCKET_ID}/files`, {
-    method: 'POST',
-    headers: {
-      'X-Appwrite-Project': projectId,
-    },
-    body: formData,
-  });
+  let uploadedFile: any;
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ message: 'Upload failed' }));
-    throw new Error(err.message || 'Failed to upload media.');
+  if (Platform.OS === 'android') {
+    // Native upload bypassing React Native JS bridge
+    const uploadResult = await FileSystem.uploadAsync(uploadUrl, asset.uri, {
+      httpMethod: 'POST',
+      uploadType: 1 as any, // 1 = MULTIPART
+      fieldName: 'file',
+      mimeType: mimeType,
+      parameters: {
+        fileId: fileId,
+      },
+      headers: {
+        'X-Appwrite-Project': projectId,
+      },
+    });
+
+    if (uploadResult.status < 200 || uploadResult.status >= 300) {
+      throw new Error(`Upload failed (${uploadResult.status}): ${uploadResult.body}`);
+    }
+
+    uploadedFile = JSON.parse(uploadResult.body);
+  } else {
+    // Standard iOS FormData execution
+    const formData = new FormData();
+    formData.append('fileId', fileId);
+    formData.append('file', {
+      uri: asset.uri,
+      name: fileName,
+      type: mimeType,
+    } as any);
+
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'X-Appwrite-Project': projectId,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(err.message || 'Failed to upload media.');
+    }
+
+    uploadedFile = await response.json();
   }
 
-  const uploadedFile = await response.json();
-  // Inside uploadSkillProof in src/services/mediaService.ts:
-    // Use /view instead of /preview to bypass image transformation restrictions
-    const mediaUrl = `${endpoint}/storage/buckets/${BUCKET_ID}/files/${uploadedFile.$id}/view?project=${projectId}`;
+  const mediaUrl = `${endpoint}/storage/buckets/${BUCKET_ID}/files/${uploadedFile.$id}/view?project=${projectId}`;
 
-  // Step D: Create Database Document
   const doc = await databases.createDocument(DB_ID, MEDIA_LOGS_COL_ID, ID.unique(), {
     userId,
     skillId,
@@ -131,9 +150,7 @@ export const uploadSkillProof = async (
   };
 };
 
-/**
- * Fetch skill media logs
- */
+// 4. Retrieve uploaded media logs for a specific skill
 export const getSkillMediaLogs = async (skillId: string): Promise<MediaLog[]> => {
   const response = await databases.listDocuments(DB_ID, MEDIA_LOGS_COL_ID, [
     Query.equal('skillId', skillId),
