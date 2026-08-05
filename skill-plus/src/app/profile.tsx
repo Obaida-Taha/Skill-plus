@@ -21,6 +21,8 @@ import { ScreenWrapper } from '../components/bottomNavTab/ScreenWrapper';
 import { ProfileHeroCard } from '../components/profile/ProfileHeroCard';
 import { ProfileStatsRow } from '../components/profile/ProfileStatsRow';
 import { ProfileInfoCard } from '../components/profile/ProfileInfoCard';
+import { AchievementsShowcase } from '../components/profile/AchievementsShowcase';
+import { calculateAchievements, Achievement } from '../utils/achievements';
 
 const DIFFICULTY_XP: Record<string, number> = { Beginner: 10, Intermediate: 20, Advanced: 35 };
 
@@ -34,7 +36,7 @@ const getLevelFromXP = (totalXp: number): number => Math.floor(Math.sqrt(totalXp
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-  const { user, userProfile } = useAuth(); // <-- Pulled userProfile from useAuth
+  const { user, userProfile } = useAuth();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,9 @@ export default function ProfileScreen() {
   const [totalXP, setTotalXP] = useState(0);
   const [userSkillsCount, setUserSkillsCount] = useState(0);
 
+  // 1. ADDED: State for calculated achievements
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+
   // Dynamic streak reading from Appwrite user_profiles collection
   const streakDays = userProfile?.streakCount ?? 0;
 
@@ -55,7 +60,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     fetchProfileData();
-  }, []);
+  }, [userProfile]);
 
   const fetchProfileData = async () => {
     try {
@@ -75,6 +80,10 @@ export default function ProfileScreen() {
       const skillsData = response.documents || [];
       setUserSkillsCount(skillsData.length);
       setTotalXP(skillsData.reduce((sum, skill) => sum + calculateSkillXP(skill), 0));
+
+      // 🏆 Calculate all 20 achievements passing skillsData and dynamic streakDays
+      const computedAchievements = calculateAchievements(skillsData, streakDays);
+      setAchievements(computedAchievements);
     } catch (error: any) {
       console.error('Error fetching profile details:', error?.message);
     } finally {
@@ -110,8 +119,6 @@ export default function ProfileScreen() {
       </ScreenWrapper>
     );
   }
-
- 
 
   return (
     <ScreenWrapper style={{ backgroundColor: theme.background }}>
@@ -167,6 +174,9 @@ export default function ProfileScreen() {
             setBioTagline={setBioTagline}
             email={user?.email}
           />
+
+          {/* 3. ADDED: Render Achievements Showcase below Info Card */}
+          <AchievementsShowcase achievements={achievements} />
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenWrapper>
