@@ -102,14 +102,18 @@ export const uploadSkillProof = async (
     }
 
     uploadedFile = JSON.parse(uploadResult.body);
-  } else {
-    // Standard iOS FormData execution
+  }else {
+    // Standard iOS multipart upload execution
     const formData = new FormData();
     formData.append('fileId', fileId);
+
+    // Format URI cleanly for iOS
+    const cleanUri = Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri;
+
     formData.append('file', {
       uri: asset.uri,
-      name: fileName,
-      type: mimeType,
+      name: fileName, // Ensures file ends in .jpg or .mp4
+      type: mimeType, // Explicit MIME type (image/jpeg or video/mp4)
     } as any);
 
     const response = await fetch(uploadUrl, {
