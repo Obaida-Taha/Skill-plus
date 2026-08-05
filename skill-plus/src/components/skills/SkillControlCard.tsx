@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, TextInput, Alert } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
 export type UserSkill = {
@@ -16,7 +16,7 @@ export type UserSkill = {
 interface SkillControlCardProps {
   skill: UserSkill;
   activeTimerSkillId: string | null;
-  onUpdateStatus: (skillId: string, newStatus: 'In Progress' | 'Paused') => void;
+  onUpdateStatus: (skillId: string, newStatus: 'In Progress' | 'Paused' | 'Completed') => void;
   onAdjustReps: (skillId: string, delta: number) => void;
   onToggleTimer: (skillId: string) => void;
   onRemoveSkill: (skillId: string, skillName: string) => void;
@@ -44,7 +44,6 @@ export function SkillControlCard({
   const [minutes, setMinutes] = useState('00');
   const [seconds, setSeconds] = useState('00');
 
-  // Convert total seconds into HH, MM, SS strings
   const updateTimeFieldsFromSeconds = (totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
@@ -55,7 +54,6 @@ export function SkillControlCard({
     setSeconds(String(s).padStart(2, '0'));
   };
 
-  // Sync inputs with parent state updates (e.g., timer ticks)
   useEffect(() => {
     setRepsInput(String(skill.reps));
   }, [skill.reps]);
@@ -64,7 +62,6 @@ export function SkillControlCard({
     updateTimeFieldsFromSeconds(skill.timeSpentSeconds);
   }, [skill.timeSpentSeconds]);
 
-  // Strip non-numeric characters for Reps
   const handleRepsChange = (text: string) => {
     setRepsInput(text.replace(/[^0-9]/g, ''));
   };
@@ -80,18 +77,15 @@ export function SkillControlCard({
     }
   };
 
-  // Time segment helpers
   const handleHoursChange = (text: string) => setHours(text.replace(/[^0-9]/g, ''));
   const handleMinutesChange = (text: string) => setMinutes(text.replace(/[^0-9]/g, ''));
   const handleSecondsChange = (text: string) => setSeconds(text.replace(/[^0-9]/g, ''));
 
-  // Commit updated total time when any segment loses focus
   const handleTimeBlur = () => {
     const h = Math.max(0, parseInt(hours, 10) || 0);
     const m = Math.min(59, Math.max(0, parseInt(minutes, 10) || 0));
     const s = Math.min(59, Math.max(0, parseInt(seconds, 10) || 0));
 
-    // Pad inputs nicely
     setHours(String(h).padStart(2, '0'));
     setMinutes(String(m).padStart(2, '0'));
     setSeconds(String(s).padStart(2, '0'));
@@ -105,7 +99,32 @@ export function SkillControlCard({
 
   const handleTimeFocus = () => {
     if (isTimerActive) {
-      onToggleTimer(skill.$id); // Pause active timer if user clicks to manually edit
+      onToggleTimer(skill.$id);
+    }
+  };
+
+  // Handler for setting status to Completed with confirmation
+  const handleStatusChange = (newStatus: 'In Progress' | 'Paused' | 'Completed') => {
+    if (newStatus === skill.status) return;
+
+    if (newStatus === 'Completed') {
+      Alert.alert(
+        'Mark Skill as Completed?',
+        `Are you sure you have finished learning "${skill.name}"? This will move it to your completed showcase on the Home Screen.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Yes, Complete It!',
+            style: 'default',
+            onPress: () => {
+              if (isTimerActive) onToggleTimer(skill.$id);
+              onUpdateStatus(skill.$id, 'Completed');
+            },
+          },
+        ]
+      );
+    } else {
+      onUpdateStatus(skill.$id, newStatus);
     }
   };
 
@@ -121,8 +140,9 @@ export function SkillControlCard({
         </View>
       </View>
 
-      {/* Status Toggle Buttons */}
+      {/* 3-Way Status Toggle Buttons */}
       <View style={styles.statusContainer}>
+        {/* In Progress Button */}
         <TouchableOpacity
           style={[
             styles.statusBtn,
@@ -130,20 +150,19 @@ export function SkillControlCard({
               ? styles.statusBtnActiveProgress
               : [styles.statusBtnInactive, { backgroundColor: theme.border, borderColor: theme.border }],
           ]}
-          onPress={() => onUpdateStatus(skill.$id, 'In Progress')}
+          onPress={() => handleStatusChange('In Progress')}
         >
           <Text
             style={[
               styles.statusBtnText,
-              skill.status === 'In Progress'
-                ? styles.textActive
-                : [styles.textInactive, { color: theme.subtext }],
+              skill.status === 'In Progress' ? styles.textActive : { color: theme.subtext },
             ]}
           >
-            ▶ In Progress
+            ▶ Progress
           </Text>
         </TouchableOpacity>
 
+        {/* Paused Button */}
         <TouchableOpacity
           style={[
             styles.statusBtn,
@@ -151,17 +170,35 @@ export function SkillControlCard({
               ? styles.statusBtnActivePaused
               : [styles.statusBtnInactive, { backgroundColor: theme.border, borderColor: theme.border }],
           ]}
-          onPress={() => onUpdateStatus(skill.$id, 'Paused')}
+          onPress={() => handleStatusChange('Paused')}
         >
           <Text
             style={[
               styles.statusBtnText,
-              skill.status === 'Paused'
-                ? styles.textActive
-                : [styles.textInactive, { color: theme.subtext }],
+              skill.status === 'Paused' ? styles.textActive : { color: theme.subtext },
             ]}
           >
             ⏸ Paused
+          </Text>
+        </TouchableOpacity>
+
+        {/* Completed Button */}
+        <TouchableOpacity
+          style={[
+            styles.statusBtn,
+            skill.status === 'Completed'
+              ? styles.statusBtnActiveCompleted
+              : [styles.statusBtnInactive, { backgroundColor: theme.border, borderColor: theme.border }],
+          ]}
+          onPress={() => handleStatusChange('Completed')}
+        >
+          <Text
+            style={[
+              styles.statusBtnText,
+              skill.status === 'Completed' ? styles.textActive : { color: theme.subtext },
+            ]}
+          >
+            ✓ Finished
           </Text>
         </TouchableOpacity>
       </View>
@@ -199,11 +236,10 @@ export function SkillControlCard({
         </View>
       </View>
 
-      {/* Time Tracking Control (00 : 00 : 00 Format) */}
+      {/* Time Tracking Control */}
       <View style={[styles.controlRow, { borderTopColor: theme.border }]}>
         <Text style={[styles.label, { color: theme.subtext }]}>Time Practiced:</Text>
         <View style={styles.counterBox}>
-          {/* Segmented Time Inputs: HH : MM : SS */}
           <View style={[styles.timeBoxContainer, { backgroundColor: theme.background, borderColor: theme.border }]}>
             <TextInput
               style={[styles.segmentInput, { color: theme.accent }]}
@@ -268,46 +304,26 @@ export function SkillControlCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-  },
+  card: { borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   skillTitle: { fontSize: 18, fontWeight: 'bold' },
   skillSubtitle: { fontSize: 12, marginTop: 4 },
-  statusContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
+  statusContainer: { flexDirection: 'row', gap: 6, marginTop: 12 },
   statusBtn: {
     flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
-  statusBtnActiveProgress: {
-    backgroundColor: '#1b5e20',
-    borderColor: '#4caf50',
-  },
-  statusBtnActivePaused: {
-    backgroundColor: '#b71c1c',
-    borderColor: '#f44336',
-  },
+  statusBtnActiveProgress: { backgroundColor: '#1b5e20', borderColor: '#4caf50' },
+  statusBtnActivePaused: { backgroundColor: '#b71c1c', borderColor: '#f44336' },
+  statusBtnActiveCompleted: { backgroundColor: '#0d47a1', borderColor: '#2196f3' },
   statusBtnInactive: {},
-  statusBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  textActive: {
-    color: '#ffffff',
-  },
-  textInactive: {},
+  statusBtnText: { fontSize: 12, fontWeight: '600' },
+  textActive: { color: '#ffffff' },
   controlRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -318,13 +334,7 @@ const styles = StyleSheet.create({
   },
   label: { fontSize: 14 },
   counterBox: { flexDirection: 'row', alignItems: 'center' },
-  btnCounter: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  btnCounter: { width: 32, height: 32, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
   btnCounterText: { fontSize: 18, fontWeight: 'bold' },
   counterInput: {
     width: 48,
@@ -346,19 +356,8 @@ const styles = StyleSheet.create({
     height: 32,
     marginRight: 10,
   },
-  segmentInput: {
-    width: 22,
-    height: 32,
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: 'bold',
-    paddingVertical: 0,
-  },
-  timeColon: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginHorizontal: 1,
-  },
+  segmentInput: { width: 22, height: 32, textAlign: 'center', fontSize: 14, fontWeight: 'bold', paddingVertical: 0 },
+  timeColon: { fontSize: 14, fontWeight: 'bold', marginHorizontal: 1 },
   btnTimer: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   btnTimerActive: { backgroundColor: '#e53935' },
   btnTimerText: { fontWeight: 'bold', fontSize: 12 },
