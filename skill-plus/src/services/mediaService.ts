@@ -107,7 +107,8 @@ export const uploadSkillProof = async (
 
   const uploadedFile = await response.json();
   // Inside uploadSkillProof in src/services/mediaService.ts:
-    const mediaUrl = `${endpoint}/storage/buckets/${BUCKET_ID}/files/${uploadedFile.$id}/preview?project=${projectId}`;
+    // Use /view instead of /preview to bypass image transformation restrictions
+    const mediaUrl = `${endpoint}/storage/buckets/${BUCKET_ID}/files/${uploadedFile.$id}/view?project=${projectId}`;
 
   // Step D: Create Database Document
   const doc = await databases.createDocument(DB_ID, MEDIA_LOGS_COL_ID, ID.unique(), {
