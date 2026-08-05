@@ -11,11 +11,15 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Client, Databases, Account, Query } from 'react-native-appwrite';
+import * as Haptics from 'expo-haptics';
 
+import { CelebrationModal, CelebrationData } from '../../components/common/CelebrationModal';
+import { calculateAchievements } from '../../utils/achievements';
 import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
 import { SkillControlCard } from '../../components/skills/SkillControlCard';
 import { CompletedSkillsCard } from '../../components/home/CompletedSkillsCard';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const client = new Client()
   .setEndpoint(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!)
@@ -32,7 +36,7 @@ export type UserSkill = {
   name: string;
   category: string;
   subCategory: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | string; // <-- Updated type
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | string;
   status: 'In Progress' | 'Paused' | 'Completed';
   reps: number;
   timeSpentSeconds: number;
@@ -42,9 +46,25 @@ export type UserSkill = {
 
 type FilterType = 'All' | 'In Progress' | 'Paused' | 'Completed';
 
+// Helpers placed outside component
+const DIFFICULTY_XP: Record<string, number> = { Beginner: 10, Intermediate: 20, Advanced: 35 };
+
+const calculateSkillXP = (skill: any): number => {
+  const rate = DIFFICULTY_XP[skill.difficulty] || 10;
+  return (skill.reps || 0) * rate + Math.floor(((skill.timeSpentSeconds || 0) / 60) * (rate / 2));
+};
+
+const getLevelFromXP = (totalXp: number): number => Math.floor(Math.sqrt(totalXp / 250)) + 1;
+
 export default function SkillsScreen() {
   const router = useRouter();
   const { theme, isDark } = useTheme();
+  const { userProfile } = useAuth();
+  const streakDays = userProfile?.streakCount ?? 0;
+
+  // Celebration Modal State
+  const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<CelebrationData | null>(null);
 
   const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -129,11 +149,48 @@ export default function SkillsScreen() {
     fetchUserSkills();
   };
 
+  const checkForCelebration = (prevSkills: UserSkill[], updatedSkills: UserSkill[]) => {
+    const prevXP = prevSkills.reduce((sum, s) => sum + calculateSkillXP(s), 0);
+    const prevLevel = getLevelFromXP(prevXP);
+    const prevBadges = calculateAchievements(prevSkills, streakDays);
+
+    const newXP = updatedSkills.reduce((sum, s) => sum + calculateSkillXP(s), 0);
+    const newLevel = getLevelFromXP(newXP);
+    const newBadges = calculateAchievements(updatedSkills, streakDays);
+
+    const newlyUnlocked = newBadges.filter(
+      (nb) => nb.isUnlocked && !prevBadges.find((pb) => pb.id === nb.id && pb.isUnlocked)
+    );
+
+    if (newLevel > prevLevel) {
+      setCelebrationData({
+        type: 'level_up',
+        title: `Level ${newLevel} Reached!`,
+        subtitle: `You earned enough XP to ascend to Level ${newLevel}. Outstanding progress!`,
+        icon: '⚡',
+      });
+      setCelebrationVisible(true);
+    } else if (newlyUnlocked.length > 0) {
+      const badge = newlyUnlocked[0];
+      setCelebrationData({
+        type: 'achievement',
+        title: `Unlocked: ${badge.title}!`,
+        subtitle: badge.description,
+        icon: badge.icon,
+      });
+      setCelebrationVisible(true);
+    }
+  };
+
   const updateSkillInAppwrite = async (skillId: string, updates: Partial<UserSkill>) => {
     try {
-      setUserSkills((prev) =>
-        prev.map((s) => (s.$id === skillId ? { ...s, ...updates } : s))
-      );
+      let nextSkills: UserSkill[] = [];
+      setUserSkills((prev) => {
+        nextSkills = prev.map((s) => (s.$id === skillId ? { ...s, ...updates } : s));
+        checkForCelebration(prev, nextSkills);
+        return nextSkills;
+      });
+
       await databases.updateDocument(DB_ID, USER_SKILLS_COL_ID, skillId, updates);
     } catch (error: any) {
       console.error('Error updating skill in Appwrite:', error.message);
@@ -154,6 +211,7 @@ export default function SkillsScreen() {
   };
 
   const toggleTimer = async (skillId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const activeSkill = userSkills.find((s) => s.$id === skillId);
     if (!activeSkill) return;
 
@@ -194,6 +252,7 @@ export default function SkillsScreen() {
   };
 
   const adjustReps = (skillId: string, delta: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const target = userSkills.find((s) => s.$id === skillId);
     if (!target) return;
 
@@ -205,6 +264,7 @@ export default function SkillsScreen() {
     skillId: string,
     newStatus: 'In Progress' | 'Paused' | 'Completed'
   ) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     updateSkillInAppwrite(skillId, { status: newStatus });
   };
 
@@ -234,7 +294,6 @@ export default function SkillsScreen() {
     );
   };
 
-  // Filter skills based on tab selection
   const completedSkills = userSkills.filter((s) => s.status === 'Completed');
   const filteredSkills = userSkills.filter((s) => {
     if (selectedFilter === 'All') return true;
@@ -248,7 +307,6 @@ export default function SkillsScreen() {
         contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Screen Header */}
         <View style={styles.headerRow}>
           <View>
             <Text style={[styles.title, { color: theme.text }]}>My Skills</Text>
@@ -266,10 +324,8 @@ export default function SkillsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 1. TOP COMPONENT: Showcase Mastered/Completed Skills First */}
         <CompletedSkillsCard skills={completedSkills} />
 
-        {/* 2. FILTER TABS BAR: In Progress | Paused | Finished | All */}
         <View style={styles.filterContainer}>
           {(['In Progress', 'Paused', 'Completed', 'All'] as FilterType[]).map((tab) => {
             const isActive = selectedFilter === tab;
@@ -283,7 +339,10 @@ export default function SkillsScreen() {
                     ? { backgroundColor: theme.accent }
                     : { backgroundColor: theme.card, borderColor: theme.border },
                 ]}
-                onPress={() => setSelectedFilter(tab)}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setSelectedFilter(tab);
+                }}
               >
                 <Text
                   style={[
@@ -300,13 +359,11 @@ export default function SkillsScreen() {
           })}
         </View>
 
-        {/* Loading Spinner */}
         {loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={theme.accent} />
           </View>
         ) : filteredSkills.length === 0 ? (
-          /* Empty State for Selected Filter */
           <View style={[styles.emptyBox, { borderColor: theme.border }]}>
             <Text style={[styles.emptyTitle, { color: theme.text }]}>
               No {selectedFilter === 'Completed' ? 'Finished' : selectedFilter} Skills
@@ -328,7 +385,6 @@ export default function SkillsScreen() {
             )}
           </View>
         ) : (
-          /* Skills List */
           filteredSkills.map((skill) => (
             <SkillControlCard
               key={skill.$id}
@@ -344,6 +400,13 @@ export default function SkillsScreen() {
           ))
         )}
       </ScrollView>
+
+      {/* Confetti & Level-Up Pop-up Modal */}
+      <CelebrationModal
+        visible={celebrationVisible}
+        data={celebrationData}
+        onClose={() => setCelebrationVisible(false)}
+      />
     </ScreenWrapper>
   );
 }
