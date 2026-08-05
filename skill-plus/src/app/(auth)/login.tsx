@@ -9,6 +9,7 @@ import {
   Pressable,
   Keyboard,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,6 +49,14 @@ export default function LoginScreen() {
     }
   };
 
+  const handleForgotPassword = () => {
+    // Placeholder alert for now; easily replaced with Appwrite account.createRecovery() later
+    Alert.alert(
+      'Reset Password',
+      'Password recovery will send a reset link to your email address once fully configured.'
+    );
+  };
+
   return (
     <GradientBackground>
       <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
@@ -63,11 +72,14 @@ export default function LoginScreen() {
                 style={styles.heroIcon}
               />
             </View>
+            {/* App Title */}
+            <Text style={styles.brandTitle}>
+              Skill<Text style={styles.brandPlus}>+</Text>
+            </Text>
           </View>
 
           {/* Text Header */}
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
           </View>
 
@@ -89,6 +101,15 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry
             />
+
+            {/* Forgot Password Link */}
+            <TouchableOpacity
+              style={styles.forgotPasswordContainer}
+              onPress={handleForgotPassword}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
 
             <GradientButton
               title="Login"
@@ -119,32 +140,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 24,
   },
-topHeroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-  },
-  iconBadge: {
-    width: 96,
-    height: 96,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 111, 0, 0.16)',
-    borderWidth: 2,
-    borderColor: '#FF6F00',
-    justifyContent: 'center', // Centers vertically
-    alignItems: 'center',     // Centers horizontally
-    shadowColor: '#FF6F00',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  heroIcon: {
-    width: 52,
-    height: 52,
-    resizeMode: 'contain',
-    tintColor: '#FF6F00',
-  },
+  topHeroSection: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: 24,
+},
+iconBadge: {
+  width: 96,
+  height: 96,
+  borderRadius: 28,
+  backgroundColor: 'rgba(255, 111, 0, 0.16)',
+  borderWidth: 2,
+  borderColor: '#FF6F00',
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#FF6F00',
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.45,
+  shadowRadius: 14,
+  elevation: 8,
+  marginBottom: 12, // Space between icon badge and text
+},
+heroIcon: {
+  width: 52,
+  height: 52,
+  resizeMode: 'contain',
+  tintColor: '#FF6F00',
+},
+brandTitle: {
+  fontSize: 28,
+  fontWeight: '900',
+  color: '#FFFFFF',
+  letterSpacing: 1,
+},
+brandPlus: {
+  color: '#FF6F00', // Highlight the '+' in accent orange
+  fontWeight: '900',
+},
   headerContainer: {
     marginBottom: 24,
   },
@@ -165,6 +197,16 @@ topHeroSection: {
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 111, 0, 0.25)',
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'center',
+    marginTop: -2,
+    marginBottom: 8,
+  },
+  forgotPasswordText: {
+    color: '#FF6F00',
+    fontSize: 13,
+    fontWeight: '600',
   },
   linkContainer: {
     marginTop: 20,
