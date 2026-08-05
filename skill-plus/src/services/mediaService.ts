@@ -63,7 +63,6 @@ export const captureMediaFromCamera = async (): Promise<ImagePicker.ImagePickerA
   return null;
 };
 
-// 3. Upload file to Appwrite Storage & save metadata in DB
 export const uploadSkillProof = async (
   userId: string,
   skillId: string,
@@ -74,63 +73,28 @@ export const uploadSkillProof = async (
   const projectId = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
   const fileId = ID.unique();
 
-  const ext = asset.type === 'video' ? 'mp4' : 'jpg';
-  const fileName = `proof_${Date.now()}.${ext}`;
   const mimeType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
-
   const uploadUrl = `${endpoint}/storage/buckets/${BUCKET_ID}/files`;
 
-  let uploadedFile: any;
+  // Native background binary upload for BOTH iOS and Android
+  const uploadResult = await FileSystem.uploadAsync(uploadUrl, asset.uri, {
+    httpMethod: 'POST',
+    uploadType: 1 as any, // 1 = MULTIPART
+    fieldName: 'file',
+    mimeType: mimeType,
+    parameters: {
+      fileId: fileId,
+    },
+    headers: {
+      'X-Appwrite-Project': projectId,
+    },
+  });
 
-  if (Platform.OS === 'android') {
-    // Native upload bypassing React Native JS bridge
-    const uploadResult = await FileSystem.uploadAsync(uploadUrl, asset.uri, {
-      httpMethod: 'POST',
-      uploadType: 1 as any, // 1 = MULTIPART
-      fieldName: 'file',
-      mimeType: mimeType,
-      parameters: {
-        fileId: fileId,
-      },
-      headers: {
-        'X-Appwrite-Project': projectId,
-      },
-    });
-
-    if (uploadResult.status < 200 || uploadResult.status >= 300) {
-      throw new Error(`Upload failed (${uploadResult.status}): ${uploadResult.body}`);
-    }
-
-    uploadedFile = JSON.parse(uploadResult.body);
-  }else {
-    // Standard iOS multipart upload execution
-    const formData = new FormData();
-    formData.append('fileId', fileId);
-
-    // Format URI cleanly for iOS
-    const cleanUri = Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri;
-
-    formData.append('file', {
-      uri: asset.uri,
-      name: fileName, // Ensures file ends in .jpg or .mp4
-      type: mimeType, // Explicit MIME type (image/jpeg or video/mp4)
-    } as any);
-
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'X-Appwrite-Project': projectId,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: 'Upload failed' }));
-      throw new Error(err.message || 'Failed to upload media.');
-    }
-
-    uploadedFile = await response.json();
+  if (uploadResult.status < 200 || uploadResult.status >= 300) {
+    throw new Error(`Upload failed (${uploadResult.status}): ${uploadResult.body}`);
   }
+
+  const uploadedFile = JSON.parse(uploadResult.body);
 
   const mediaUrl = `${endpoint}/storage/buckets/${BUCKET_ID}/files/${uploadedFile.$id}/view?project=${projectId}`;
 
