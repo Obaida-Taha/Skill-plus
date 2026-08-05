@@ -15,6 +15,7 @@ import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
 import { LevelCard } from '../../components/home/LevelCard';
 import { SkillItemCard, UserSkill } from '../../components/home/SkillItemCard';
 import { CategoryStatsCard } from '../../components/CategoryStatsCard';
+import { OnboardingModal } from '../../components/common/OnboardingModal';
 
 const DIFFICULTY_XP: Record<string, number> = {
   Beginner: 10,
@@ -42,8 +43,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('SkillPlus Learner');
+  const [userId, setUserId] = useState<string>(''); // 1. ADDED: User ID state
   const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
   const [totalXP, setTotalXP] = useState(0);
+
+  // 1. ADDED: Onboarding Modal Visibility State
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const dbId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID || 'skills-collection';
   const userSkillsColId = 'user_skills';
@@ -59,6 +64,7 @@ export default function HomeScreen() {
       setLoading(true);
       const currentUser = await account.get();
       setUserName(currentUser.name || currentUser.email.split('@')[0]);
+      setUserId(currentUser.$id); // Save user ID for onboarding skills creation
 
       const response = await databases.listDocuments(dbId, userSkillsColId, [
         Query.equal('userId', currentUser.$id),
@@ -82,6 +88,11 @@ export default function HomeScreen() {
 
       setUserSkills(skillsData);
       setTotalXP(calculatedTotalXP);
+
+      // 2. ADDED: Trigger Onboarding if brand new user has 0 skills
+      if (skillsData.length === 0) {
+        setShowOnboarding(true);
+      }
     } catch (error: any) {
       console.error('Error fetching home data:', error.message);
     } finally {
@@ -181,6 +192,16 @@ export default function HomeScreen() {
             Start Practicing
           </Text>
         </TouchableOpacity>
+
+        {/* 3. ADDED: Onboarding Modal Integration */}
+        <OnboardingModal
+          visible={showOnboarding}
+          userId={userId}
+          onComplete={() => {
+            setShowOnboarding(false);
+            fetchHomeData(); // Refreshes dashboard data so new starter skills populate immediately!
+          }}
+        />
       </ScreenWrapper>
     </View>
   );
