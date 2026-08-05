@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Client, Databases, Account, Query } from 'react-native-appwrite';
 
 import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
@@ -51,13 +51,15 @@ export default function SkillsScreen() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    fetchUserSkills();
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserSkills();
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    }, [])
+  );
 
   const formatTime = (seconds: number): string => {
     const h = Math.floor(seconds / 3600);
