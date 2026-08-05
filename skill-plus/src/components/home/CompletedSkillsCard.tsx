@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { UserSkill } from '../../app/(tabs)/skills';
 
@@ -8,6 +9,7 @@ interface CompletedSkillsCardProps {
 }
 
 export function CompletedSkillsCard({ skills }: CompletedSkillsCardProps) {
+  const router = useRouter();
   const { theme } = useTheme();
 
   // State to track if the user is in "See All / Drill-down" view
@@ -15,8 +17,16 @@ export function CompletedSkillsCard({ skills }: CompletedSkillsCardProps) {
 
   if (skills.length === 0) return null; // Hide if no skills are completed yet
 
-  // Get the single most recently completed skill (first item or last added)
+  // Get the single most recently completed skill
   const latestSkill = skills[skills.length - 1];
+
+// Helper to open the proof showcase screen
+  const handleOpenProof = (skill: UserSkill) => {
+    router.push({
+      pathname: '/skill-proof/[id]', // MUST start with a forward slash '/' without 'app' or '../'
+      params: { id: skill.$id, skillName: skill.name },
+    });
+  };
 
   // Format time helper (e.g. 5h 20m)
   const formatTotalTime = (seconds: number) => {
@@ -33,14 +43,14 @@ export function CompletedSkillsCard({ skills }: CompletedSkillsCardProps) {
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: theme.text }]}>🏆 Mastered Skills ({skills.length})</Text>
           <Text style={[styles.subtitle, { color: theme.subtext }]}>
-            {showAll ? 'Viewing all your completed skills' : 'Your latest achievement'}
+            {showAll ? 'Tap any skill to view or add proof' : 'Tap to view or add media proof'}
           </Text>
         </View>
 
         {/* Back button or See All Toggle */}
         {showAll ? (
           <TouchableOpacity onPress={() => setShowAll(false)} style={styles.backBtn}>
-            <Text style={[styles.backBtnText, { color: theme.accent }]}>‹ Back</Text>
+            <Text style={[styles.backBtnText, { color: theme.accent }]}>‹ Collapse</Text>
           </TouchableOpacity>
         ) : (
           skills.length > 1 && (
@@ -60,7 +70,8 @@ export function CompletedSkillsCard({ skills }: CompletedSkillsCardProps) {
             <TouchableOpacity
               key={skill.$id}
               style={[styles.skillRow, { backgroundColor: theme.background, borderColor: '#4caf50' }]}
-              activeOpacity={0.8}
+              onPress={() => handleOpenProof(skill)}
+              activeOpacity={0.7}
             >
               <View style={styles.checkBadge}>
                 <Text style={styles.checkIcon}>✓</Text>
@@ -71,6 +82,7 @@ export function CompletedSkillsCard({ skills }: CompletedSkillsCardProps) {
                   {skill.category} • {skill.reps} reps • {formatTotalTime(skill.timeSpentSeconds)}
                 </Text>
               </View>
+              <Text style={[styles.cameraBadge, { color: theme.accent }]}>📸 Proof ›</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -78,10 +90,8 @@ export function CompletedSkillsCard({ skills }: CompletedSkillsCardProps) {
         /* VIEW 2: COMPACT SINGLE LATEST SKILL VIEW (DEFAULT) */
         <TouchableOpacity
           style={[styles.featuredBadge, { backgroundColor: theme.background, borderColor: '#4caf50' }]}
-          onPress={() => {
-            if (skills.length > 1) setShowAll(true);
-          }}
-          activeOpacity={0.8}
+          onPress={() => handleOpenProof(latestSkill)}
+          activeOpacity={0.7}
         >
           <View style={styles.checkBadge}>
             <Text style={styles.checkIcon}>✓</Text>
@@ -92,10 +102,7 @@ export function CompletedSkillsCard({ skills }: CompletedSkillsCardProps) {
               {latestSkill.category} • {latestSkill.reps} reps • {formatTotalTime(latestSkill.timeSpentSeconds)}
             </Text>
           </View>
-
-          {skills.length > 1 && (
-            <Text style={[styles.chevron, { color: theme.subtext }]}>›</Text>
-          )}
+          <Text style={[styles.cameraBadge, { color: theme.accent }]}>📸 Proof ›</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -164,8 +171,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  chevron: {
-    fontSize: 20,
+  cameraBadge: {
+    fontSize: 12,
     fontWeight: 'bold',
   },
   gridContainer: {
