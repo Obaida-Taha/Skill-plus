@@ -1,13 +1,18 @@
-import React from 'react';
-import { View, Text, Alert, ScrollView, StyleSheet, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Alert, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useProStatus } from '../../context/ProContext';
 import { useRouter } from 'expo-router';
+import Purchases from 'react-native-purchases';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const { theme, isDark, toggleTheme } = useTheme();
+  const { isPro, refreshProStatus } = useProStatus();
   const router = useRouter();
+
+  const [restoring, setRestoring] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -29,6 +34,31 @@ export default function SettingsScreen() {
     router.push('/paywall');
   };
 
+  const handleRestorePurchases = async () => {
+    try {
+      setRestoring(true);
+      const customerInfo = await Purchases.restorePurchases();
+      
+      // Update global ProContext
+      if (refreshProStatus) {
+        await refreshProStatus();
+      }
+
+      const hasActivePro = typeof customerInfo.entitlements.active['pro'] !== 'undefined';
+
+      if (hasActivePro) {
+        Alert.alert('Success', 'Your Pro membership has been restored!');
+      } else {
+        Alert.alert('No Purchases Found', 'No active Pro subscription was found for this store account.');
+      }
+    } catch (error: any) {
+      console.error('Restore purchases error:', error);
+      Alert.alert('Error', error.message || 'Failed to restore purchases.');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Profile Header */}
@@ -43,7 +73,7 @@ export default function SettingsScreen() {
       {/* Options List */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         
-        {/* Premium Upgrade Button */}
+        {/* Premium Status / Upgrade Button */}
         <Pressable
           style={({ pressed }) => [
             styles.row,
@@ -54,12 +84,34 @@ export default function SettingsScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={styles.proBadge}>👑 PRO</Text>
-            <Text style={[styles.rowText, { color: theme.text, fontWeight: '600' }]}>Premium</Text>
+            <Text style={[styles.rowText, { color: theme.text, fontWeight: '600' }]}>
+              {isPro ? 'Pro Member' : 'Premium'}
+            </Text>
           </View>
-          <Text style={{ color: theme.accent, fontWeight: '600', fontSize: 14 }}>Upgrade ›</Text>
+          <Text style={{ color: theme.accent, fontWeight: '600', fontSize: 14 }}>
+            {isPro ? 'Manage ›' : 'Upgrade ›'}
+          </Text>
         </Pressable>
 
-        {/* Profile Navigation Button using Pressable */}
+        {/* Restore Purchases Button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.row,
+            styles.rowBetween,
+            { borderBottomColor: theme.border, opacity: pressed || restoring ? 0.7 : 1 },
+          ]}
+          onPress={handleRestorePurchases}
+          disabled={restoring}
+        >
+          <Text style={[styles.rowText, { color: theme.text }]}>Restore Purchases</Text>
+          {restoring ? (
+            <ActivityIndicator size="small" color={theme.accent} />
+          ) : (
+            <Text style={{ color: theme.accent, fontSize: 14, fontWeight: '600' }}>Restore</Text>
+          )}
+        </Pressable>
+
+        {/* Profile Navigation Button */}
         <Pressable
           style={({ pressed }) => [
             styles.row,
@@ -90,7 +142,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         {/* Help & Contact */}
-        <Pressable style={styles.row}>
+        <Pressable style={[styles.row, { borderBottomWidth: 0 }]}>
           <Text style={[styles.rowText, { color: theme.text }]}>Help & Contact</Text>
         </Pressable>
       </View>
