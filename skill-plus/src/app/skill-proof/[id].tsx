@@ -90,7 +90,10 @@ export default function SkillProofScreen() {
         <ScreenWrapper style={{ backgroundColor: theme.background }}>
             <ScrollView contentContainerStyle={styles.container}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Text style={{ color: theme.accent, fontWeight: 'bold' }}>← Back to Skills</Text>
+                    <Text style={{ color: theme.accent, fontWeight: 'bold', marginTop: 30
+
+
+                     }}>← Back to Skills</Text>
                 </TouchableOpacity>
 
                 <Text style={[styles.title, { color: theme.text }]}>
