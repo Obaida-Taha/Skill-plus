@@ -13,11 +13,12 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
 import { useTheme } from '../context/ThemeContext';
+import { useProStatus } from '@/hooks/useProStatus';
 
 export default function PaywallScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-
+  const { refetchProStatus } = useProStatus();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -50,13 +51,18 @@ export default function PaywallScreen() {
       setPurchasing(true);
       const { customerInfo } = await Purchases.purchasePackage(selectedPackage);
 
-      if (customerInfo.entitlements.active['pro_access'] !== undefined) {
+      // 1. Force global context to refresh entitlement status immediately
+      await refetchProStatus();
+
+      // 2. Check for 'pro' (matching your RevenueCat Dashboard Entitlement ID)
+      if (typeof customerInfo.entitlements.active['pro'] !== 'undefined') {
         Alert.alert('Welcome to Skill Plus Pro!', 'Your subscription is now active.', [
           { text: 'OK', onPress: () => router.back() },
         ]);
       } else {
-        Alert.alert('Success', 'Thank you for your purchase!');
-        router.back();
+        Alert.alert('Success', 'Thank you for your purchase!', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
       }
     } catch (e: any) {
       if (!e.userCancelled) {

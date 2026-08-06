@@ -1,27 +1,54 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Query } from 'react-native-appwrite';
+import Purchases from 'react-native-purchases';
 import { account, databases, DATABASE_ID, USER_PROFILES_COLLECTION_ID, ID } from '../lib/appwrite';
 
 type AuthContextType = {
   user: any;
-  userProfile: any; // <-- Added userProfile state
+  userProfile: any;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshUserProfile: () => Promise<void>; // <-- Added to manually update profile state when streak changes
+  refreshUserProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<any>(null); // <-- Profile document state
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Helper to sync RevenueCat user identity with Appwrite $id
+  const syncRevenueCatUser = async (userId: string) => {
+    try {
+      if (typeof Purchases.canMakePayments === 'function') {
+        const isConfigured = await Purchases.isConfigured();
+        if (isConfigured) {
+          await Purchases.logIn(userId);
+        }
+      }
+    } catch (error) {
+      console.warn('RevenueCat logIn sync error:', error);
+    }
+  };
+
+  const handleRevenueCatLogout = async () => {
+    try {
+      if (typeof Purchases.canMakePayments === 'function') {
+        const isConfigured = await Purchases.isConfigured();
+        if (isConfigured) {
+          await Purchases.logOut();
+        }
+      }
+    } catch (error) {
+      console.warn('RevenueCat logOut sync error:', error);
+    }
+  };
 
   // Fetch or create user profile document in Appwrite DB
   const fetchOrCreateUserProfile = async (userId: string) => {
-    // Safeguard: Ensure userId exists before querying Appwrite
     if (!userId || typeof userId !== 'string') {
       console.warn('fetchOrCreateUserProfile called without a valid userId');
       return null;
@@ -38,7 +65,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return response.documents[0];
       }
 
-      // First-time setup: create initial profile document
       return await databases.createDocument(
         DATABASE_ID,
         USER_PROFILES_COLLECTION_ID,
@@ -54,7 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return null;
     }
   };
-  
+
   const refreshUserProfile = async () => {
     if (user?.$id) {
       const profile = await fetchOrCreateUserProfile(user.$id);
@@ -68,7 +94,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const currentAccount = await account.get();
       setUser(currentAccount);
 
-      // Fetch associated profile
+      // Sync RevenueCat with Appwrite User ID
+      await syncRevenueCatUser(currentAccount.$id);
+
       const profile = await fetchOrCreateUserProfile(currentAccount.$id);
       setUserProfile(profile);
     } catch (error) {
@@ -88,6 +116,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const currentAccount = await account.get();
     setUser(currentAccount);
 
+    // Sync RevenueCat with Appwrite User ID
+    await syncRevenueCatUser(currentAccount.$id);
+
     const profile = await fetchOrCreateUserProfile(currentAccount.$id);
     setUserProfile(profile);
   };
@@ -103,6 +134,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.log('Appwrite session delete error:', error);
     } finally {
+      // Revert RevenueCat back to anonymous state
+      await handleRevenueCatLogout();
+
       setUser(null);
       setUserProfile(null);
     }
