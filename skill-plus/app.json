@@ -1,19 +1,26 @@
 {
   "expo": {
-    "name": "skill-plus",
+    "name": "Skill-Plus",
     "slug": "skill-plus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "skillplus",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.skill-plus"
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.anonymous.skillplus",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Skill-Plus requires camera access so you can capture photo and video proof of your skills.",
+        "NSPhotoLibraryUsageDescription": "Skill-Plus requires photo library access so you can select and upload media proof.",
+        "NSMicrophoneUsageDescription": "Skill-Plus requires microphone access to record audio with video proof."
+      }
     },
     "android": {
+      "package": "com.anonymous.skillplus",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -29,9 +36,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#000000",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 200
         }
       ],
       "expo-video"
