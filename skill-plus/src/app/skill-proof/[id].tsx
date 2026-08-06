@@ -9,8 +9,10 @@ import {
     ActivityIndicator,
     TextInput,
     Alert,
+    Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ScreenWrapper } from '../../components/bottomNavTab/ScreenWrapper';
@@ -22,6 +24,61 @@ import {
     MediaLog,
 } from '../../services/mediaService';
 
+// Separate Modal Component to isolate video player lifecycle & hooks
+function FullScreenMediaModal({
+    visible,
+    media,
+    onClose,
+}: {
+    visible: boolean;
+    media: { url: string; type: 'image' | 'video' } | null;
+    onClose: () => void;
+}) {
+    const videoUrl = media?.type === 'video' ? media.url : '';
+
+    // Initialize video player hook
+    const player = useVideoPlayer(videoUrl, (player) => {
+        player.loop = true;
+        if (visible && media?.type === 'video') {
+            player.play();
+        }
+    });
+
+    if (!media) return null;
+
+    return (
+        <Modal
+            visible={visible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={onClose}
+        >
+            <View style={styles.modalOverlay}>
+                <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                    <Text style={styles.closeBtnText}>✕ Close</Text>
+                </TouchableOpacity>
+
+                <View style={styles.modalContent}>
+                    {media.type === 'image' ? (
+                        <Image
+                            source={{ uri: media.url }}
+                            style={styles.fullMedia}
+                            resizeMode="contain"
+                        />
+                    ) : (
+                        <VideoView
+                            style={styles.fullMedia}
+                            player={player}
+                            allowsPictureInPicture
+                            startsPictureInPictureAutomatically
+                        />
+                    )}
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
 export default function SkillProofScreen() {
     const { id: skillId, skillName } = useLocalSearchParams<{ id: string; skillName?: string }>();
     const router = useRouter();
@@ -32,6 +89,9 @@ export default function SkillProofScreen() {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [notes, setNotes] = useState('');
+
+    // Active media state for full-screen viewer
+    const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
 
     useEffect(() => {
         if (skillId) loadLogs();
@@ -135,21 +195,27 @@ export default function SkillProofScreen() {
                     logs.map((item) => (
                         <View key={item.$id} style={[styles.mediaCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
                             {item.mediaType === 'image' ? (
-                                <Image
-                                    source={{ uri: item.mediaUrl }}
-                                    style={{
-                                        width: '100%',
-                                        height: 200, // Explicit height is REQUIRED for remote URIs
-                                        borderRadius: 8,
-                                        backgroundColor: '#e2e8f0', // Placeholder color while loading
-                                    }}
-                                    resizeMode="cover"
-                                    onError={(e) => console.log('🔴 Image Error:', e.nativeEvent.error)}
-                                />
+                                <TouchableOpacity
+                                    activeOpacity={0.85}
+                                    onPress={() => setSelectedMedia({ url: item.mediaUrl, type: 'image' })}
+                                >
+                                    <Image
+                                        source={{ uri: item.mediaUrl }}
+                                        style={styles.cardPreview}
+                                        resizeMode="cover"
+                                        onError={(e) => console.log('🔴 Image Error:', e.nativeEvent.error)}
+                                    />
+                                </TouchableOpacity>
                             ) : (
-                                <View style={[styles.mediaPreview, styles.videoPlaceholder]}>
-                                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>🎬 Video Proof</Text>
-                                </View>
+                                <TouchableOpacity
+                                    activeOpacity={0.85}
+                                    style={[styles.cardPreview, styles.videoPlaceholder]}
+                                    onPress={() => setSelectedMedia({ url: item.mediaUrl, type: 'video' })}
+                                >
+                                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                                        ▶️ Tap to Play Video Proof
+                                    </Text>
+                                </TouchableOpacity>
                             )}
                             <View style={styles.mediaInfo}>
                                 <Text style={{ color: theme.subtext, fontSize: 11 }}>
@@ -163,6 +229,13 @@ export default function SkillProofScreen() {
                     ))
                 )}
             </ScrollView>
+
+            {/* Modal for full-screen photo & video viewing */}
+            <FullScreenMediaModal
+                visible={!!selectedMedia}
+                media={selectedMedia}
+                onClose={() => setSelectedMedia(null)}
+            />
         </ScreenWrapper>
     );
 }
@@ -178,8 +251,41 @@ const styles = StyleSheet.create({
     uploadBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
     emptyBox: { padding: 24, borderWidth: 1, borderRadius: 12, alignItems: 'center' },
     mediaCard: { borderRadius: 12, borderWidth: 1, overflow: 'hidden', marginBottom: 16 },
-    mediaPreview: { width: '100%', height: 200 },
+    cardPreview: { width: '100%', height: 200, borderRadius: 8 },
     videoPlaceholder: { backgroundColor: '#1e293b', justifyContent: 'center', alignItems: 'center' },
     mediaInfo: { padding: 12 },
     notesText: { fontSize: 14, marginTop: 4, fontWeight: '500' },
+
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    closeBtn: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        borderRadius: 20,
+    },
+    closeBtnText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    modalContent: {
+        width: '100%',
+        height: '80%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullMedia: {
+        width: '95%',
+        height: '100%',
+    },
 });
