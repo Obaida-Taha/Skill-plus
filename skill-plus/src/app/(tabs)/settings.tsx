@@ -21,9 +21,12 @@ export default function SettingsScreen() {
 
   const handleNavigateProfile = () => {
     console.log('Navigating to profile screen...');
-    // If your file is at src/app/profile.tsx use '/profile'
-    // If your file is inside tabs (src/app/(tabs)/profile.tsx) use '/(tabs)/profile'
     router.push('/profile');
+  };
+
+  const handleNavigatePaywall = () => {
+    console.log('Navigating to paywall screen...');
+    router.push('/paywall');
   };
 
   return (
@@ -40,6 +43,22 @@ export default function SettingsScreen() {
       {/* Options List */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         
+        {/* Premium Upgrade Button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.row,
+            styles.rowBetween,
+            { borderBottomColor: theme.border, opacity: pressed ? 0.7 : 1 },
+          ]}
+          onPress={handleNavigatePaywall}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={styles.proBadge}>👑 PRO</Text>
+            <Text style={[styles.rowText, { color: theme.text, fontWeight: '600' }]}>Premium</Text>
+          </View>
+          <Text style={{ color: theme.accent, fontWeight: '600', fontSize: 14 }}>Upgrade ›</Text>
+        </Pressable>
+
         {/* Profile Navigation Button using Pressable */}
         <Pressable
           style={({ pressed }) => [
@@ -124,6 +143,16 @@ const styles = StyleSheet.create({
   },
   rowText: {
     fontSize: 16,
+  },
+  proBadge: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFD700',
+    backgroundColor: '#3A2E00',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   themeBadge: {
     paddingHorizontal: 10,
